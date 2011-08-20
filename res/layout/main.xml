@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
+	android:orientation="vertical" android:layout_height="fill_parent" android:layout_width="fill_parent" android:color="#000000"
+	android:keepScreenOn="true">
+	<com.google.ads.AdView android:id="@+id/ad" android:layout_width="fill_parent" android:color="#000"
+		android:layout_height="50dip" ads:adUnitId="a14a8b0dc2dff57" ads:adSize="BANNER" />
+	<FrameLayout android:layout_marginTop="10dip" android:layout_marginBottom="40dip" android:id="@+id/webview"
+		android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="0" />
+	<RelativeLayout android:layout_marginTop="-40dip" android:gravity="center_horizontal"
+		android:layout_height="wrap_content" android:layout_width="fill_parent" android:color="#000"
+		android:layout_alignParentBottom="true">
+		<Button android:id="@+id/homebuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_weight="0" android:text="home" android:width="65dip" />
+		<EditText android:id="@+id/gotopageview" android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_weight="0" android:numeric="decimal" android:width="60dip" android:maxLength="3"
+			android:layout_toRightOf="@id/homebuttonview" />
+		<Button android:id="@+id/prevpagebuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_weight="0" android:width="50dip" android:text="&lt;" android:layout_toRightOf="@id/gotopageview" />
+		<Button android:id="@+id/prevsubbuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_weight="0" android:width="40dip" android:text="&lt;&lt;" android:layout_toRightOf="@id/prevpagebuttonview" />
+		<Button android:id="@+id/nextsubbuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_weight="0" android:width="40dip" android:text="&gt;&gt;" android:layout_toRightOf="@id/prevsubbuttonview" />
+		<Button android:id="@+id/nextpagebuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_weight="0" android:width="50dip" android:text="&gt;" android:layout_toRightOf="@id/nextsubbuttonview" />
+	</RelativeLayout>
+</LinearLayout>

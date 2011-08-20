@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="title">NOS TeleTEKST</string>
+	<string name="app_name">TeleTEKST</string>
+	<string name="main_title">NOS TeleTEKST</string>
+	<string name="menu_about">Informatie</string>
+	<string name="menu_close">Sluiten</string>
+	<string name="menu_sethomepage">Zet startpagina</string>
+	<string name="toast_pagenotfound">Pagina kan niet geladen worden</string>
+	<string name="toast_pagereload">Pagina wordt ververst</string>
+	<string name="toast_homepageset">Startpagina ingesteld</string>
+	<string name="dialog_about_title">Informatie</string>
+	<string name="dialog_about_message">Atoom TeleTEKST</string>
+	<string name="dialog_about_ok">Sluiten</string>
+	<string name="dialog_about_text"> Selecteer links op het scherm\nNavigeer via scherm of buttons\nSelecteer paginanr dmv
+		(soft)keyboard\nStel startpagina in via menu\nPaginas verversen elke minuut\n\nVoor meer informatie en feedback
+		zie:\nhttp://code.google.com/p/atoom-android
+	</string>
+</resources>
