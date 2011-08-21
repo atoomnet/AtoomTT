@@ -322,10 +322,11 @@ public final class TTActivity extends Activity {
 	}
 
 	private void initGraphics() {
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		//requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		getWindow().setTitle(getResources().getText(R.string.main_title));
 		getWindow().setSoftInputMode(1);
+                getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
 		setContentView(R.layout.main);
 	}
 
