@@ -32,6 +32,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.os.Handler;
 import android.os.Message;
 import android.text.Editable;
@@ -124,6 +125,10 @@ public final class TTActivity extends Activity {
 		initEditText();
 		initButtons();
 		initMainWebViewAnimator();
+
+                // TODO remove this in the final version
+                // http://android-developers.blogspot.com/2010/12/new-gingerbread-api-strictmode.html
+                StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.LAX);
 
 		myHandler.postDelayed(new Runnable() {
 			public void run() {
