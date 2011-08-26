@@ -126,7 +126,7 @@ public final class TTActivity extends Activity {
 		initButtons();
 		initMainWebViewAnimator();
 
-                // TODO remove this in the final version
+                // TODO remove this in the final version yeyeyeyey
                 // http://android-developers.blogspot.com/2010/12/new-gingerbread-api-strictmode.html
                 StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.LAX);
 
