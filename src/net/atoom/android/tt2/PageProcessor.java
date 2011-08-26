@@ -17,6 +17,8 @@ package net.atoom.android.tt2;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.StringReader;
+import java.io.BufferedReader;
 
 import net.atoom.android.tt2.util.LogBridge;
 
@@ -135,4 +137,45 @@ public final class PageProcessor {
 			LogBridge.i(" prevSubPageId : not found");
 		return "";
 	}
+
+        // Walk through the first few lines of the page html (after the <pre>) and extract the page title
+        public String titleFromData(final String pageHtml) {
+	        String page = pageHtml.replaceAll("\\<.*?>", "");
+                BufferedReader bf = new BufferedReader(new StringReader(page));
+                String title = "";
+                try {
+                        int i = 0;
+                        String line = bf.readLine();
+                        while (line != null) {
+                                if (title.equals("")) {
+                                        switch (i) {
+                                        case 1:
+                                                if (line.matches("\\*+$")) {
+                                                        // only stars
+                                                        break;
+                                                }
+                                                if (line.matches("[0-9]+\\/[0-9]+")) {
+                                                        // something like 1/3
+                                                        break;
+                                                }
+                                                title = line;
+                                                break;
+                                        case 2:
+                                                // nothing found, maybe:
+                                                // ************  J  O  U  R  N  A  A  L
+                                                // less than 40 stars means title
+                                                if (line.length() > 39 &&  line.substring(39, 1).equals("*")) {
+                                                        title = line;
+                                                }
+                                                break;
+                                        }
+                                }
+                                line = bf.readLine();
+                                i++;
+                        }
+                } catch (java.io.IOException e) {
+                        return "";
+                }
+                return title;
+        }
 }
