@@ -22,10 +22,8 @@ import java.io.InputStreamReader;
 
 import net.atoom.android.tt2.util.BoundStack;
 import net.atoom.android.tt2.util.LogBridge;
+import android.app.ActionBar;
 import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -221,6 +219,9 @@ public final class TTActivity extends Activity {
 						updateButtons();
 						updateWebView();
 
+						final ActionBar actionBar = getActionBar();
+						actionBar.setTitle(myCurrentPageEntity.getPageTitle());
+						
 						myPageLoader.loadPage(myCurrentPageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
 						myPageLoader.loadPage(myCurrentPageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
 						myPageLoader.loadPage(myCurrentPageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);

@@ -138,47 +138,32 @@ public final class PageProcessor {
 		return "";
 	}
 
-        // Walk through the first few lines of the page html (after the <pre>) and extract the page title
-        public String titleFromData(final String pageHtml) {
-	        String page = pageHtml.replaceAll("\\<.*?>", "");
-                BufferedReader bf = new BufferedReader(new StringReader(page));
-                String title = "";
-                try {
-                        int i = 0;
-                        String line = bf.readLine();
-                        while (line != null) {
-                                if (title.equals("")) {
-                                        switch (i) {
-                                        case 1:
-                                                if (line.matches("\\*+$")) {
-                                                        // only stars
-                                                        break;
-                                                }
-                                                if (line.matches("[0-9]+\\/[0-9]+")) {
-                                                        // something like 1/3
-                                                        break;
-                                                }
-                                                title = line;
-                                                break;
-                                        case 2:
-                                                // still nothing found, maybe:
-                                                // ************  J  O  U  R  N  A  A  L
-                                                // less than 40 stars means title
-                                                if (line.length() > 39 &&  line.substring(39, 1).equals("*")) {
-                                                        title = line;
-                                                }
-                                                break;
-                                        case 3:
-                                                // still nothing found
-                                                return "";
-                                        }
-                                }
-                                line = bf.readLine();
-                                i++;
-                        }
-                } catch (java.io.IOException e) {
-                        return "";
-                }
-                return title;
-        }
+	public String titleFromData(final String pageHtml) {
+
+		String newspageData = pageHtml.replaceAll(CONTENT_EOL_CODE, CONTENT_EOL_MARKER);
+		Matcher newsPageMatcher = PATTERN_TTDATA.matcher(newspageData);
+		if (newsPageMatcher.find()) {
+			if (LogBridge.isLoggable())
+				LogBridge.i("Newspagedata block found");
+			newspageData = newsPageMatcher.group(1);
+			newspageData = newspageData.replaceAll(CONTENT_HREF_START, CONTENT_HREF_START + PAGEURL_BASE);
+			newspageData = newspageData.replaceAll(CONTENT_EOL_MARKER, CONTENT_EOL_CODE);
+		} else {
+			if (LogBridge.isLoggable())
+				LogBridge.w("Newspagedata not found");
+		}
+
+		String page = newspageData.replaceAll("\\<.*?>", "");
+		String title = "";
+		BufferedReader bf = new BufferedReader(new StringReader(page));
+		try {
+			bf.readLine(); // skip line 0
+			title = bf.readLine();
+			if (title.matches(".*\\*+.*")) {
+				title = bf.readLine();
+			}
+		} catch (java.io.IOException e) {
+		}
+		return title;
+	}
 }

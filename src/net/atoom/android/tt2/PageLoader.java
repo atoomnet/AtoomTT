@@ -102,6 +102,8 @@ public final class PageLoader {
 
 		pageEntity.setPageId(myProcessor.pageIdFromUrl(pageEntity.getPageUrl()));
 
+		pageEntity.setPageTitle(myProcessor.titleFromData(pageEntity.getHtmlData()));
+
 		pageEntity.setNextPageId(myProcessor.nextPageIdFromData(pageEntity.getHtmlData()));
 		if (!pageEntity.getNextPageId().equals("")) {
 			pageEntity.setNextPageUrl(myProcessor.pageUrlFromId(pageEntity.getNextPageId()));

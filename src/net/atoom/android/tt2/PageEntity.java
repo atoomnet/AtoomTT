@@ -19,6 +19,7 @@ public final class PageEntity {
 
 	private String myPageId;
 	private String myPageUrl;
+	private String myPageTitle;
 	private String myHtmlData;
 	private String myETag;
 
@@ -55,6 +56,14 @@ public final class PageEntity {
 
 	public void setPageUrl(final String pageUrl) {
 		myPageUrl = pageUrl;
+	}
+
+	public String getPageTitle() {
+		return myPageTitle;
+	}
+
+	public void setPageTitle(final String pageTitle) {
+		myPageTitle = pageTitle;
 	}
 
 	public String getHtmlData() {
