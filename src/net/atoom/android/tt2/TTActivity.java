@@ -509,6 +509,7 @@ public final class TTActivity extends Activity {
 
 	private void enableButton(final Button button) {
 		button.setEnabled(true);
+		button.setEnabled(true);
 		button.setFocusable(true);
 	}
 
