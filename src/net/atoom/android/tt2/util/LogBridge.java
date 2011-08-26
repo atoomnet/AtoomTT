@@ -21,7 +21,7 @@ import android.util.Log;
 public final class LogBridge {
 
 	// switch to false before release
-	private static final boolean doLog = false;
+	private static final boolean doLog = true;
 
 	public static void i(final String m) {
 		if (doLog)
