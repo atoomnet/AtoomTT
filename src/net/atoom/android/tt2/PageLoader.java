@@ -15,6 +15,10 @@
  */
 package net.atoom.android.tt2;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
+
 import net.atoom.android.tt2.util.LRUCache;
 import net.atoom.android.tt2.util.LogBridge;
 
@@ -23,26 +27,51 @@ public final class PageLoader {
 	private final static int CACHE_SIZE = 100;
 	private final static long CACHE_TIME = 59000;
 
-	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(
-			CACHE_SIZE);
+	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(CACHE_SIZE);
 	private final HttpConnection myHttpConnection;
 	private final PageProcessor myProcessor;
+	private final PriorityBlockingQueue<PageLoadRequest> myLoadRequests;
+	private final ExecutorService myExecutorService;
 
 	public PageLoader() {
 		myHttpConnection = new HttpConnection();
 		myProcessor = new PageProcessor();
+		myLoadRequests = new PriorityBlockingQueue<PageLoadRequest>();
+		myExecutorService = Executors.newFixedThreadPool(1);
+		myExecutorService.submit(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while (true) {
+						Thread.sleep(1000);
+						PageLoadRequest plr = myLoadRequests.take();
+						PageEntity pe = doLoadPage(plr.getPageUrl());
+						if (plr.getPageLoadCompletionHandler() != null) {
+							plr.getPageLoadCompletionHandler().pageLoadCompleted(pe);
+						}
+					}
+				} catch (InterruptedException e) {
+				}
+			}
+		});
 	}
 
-	public synchronized PageEntity loadPage(final String pageUrl) {
+	public void loadPage(String pageUrl, PageLoadPriority pageLoadPriority,
+			PageLoadCompletionHandler pageLoadCompletionHandler) {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Offering pageload request: " + pageUrl);
+		myLoadRequests.offer(new PageLoadRequest(pageUrl, pageLoadPriority, pageLoadCompletionHandler));
+	}
 
-		if(pageUrl == null || "".equals(pageUrl)){
+	private PageEntity doLoadPage(final String pageUrl) {
+
+		if (pageUrl == null || "".equals(pageUrl)) {
 			return null;
 		}
-		
+
 		PageEntity pageEntity = myPageCache.get(pageUrl);
 		if (pageEntity != null) {
-			if ((System.currentTimeMillis() - CACHE_TIME) < pageEntity
-					.getCreated()) {
+			if ((System.currentTimeMillis() - CACHE_TIME) < pageEntity.getCreated()) {
 				if (LogBridge.isLoggable())
 					LogBridge.i("Returning cached entity: " + pageUrl);
 				return pageEntity;
@@ -72,36 +101,27 @@ public final class PageLoader {
 			LogBridge.i("Processing new entity: " + pageEntity.getPageUrl());
 
 		pageEntity.setPageId(myProcessor.pageIdFromUrl(pageEntity.getPageUrl()));
-		
-		pageEntity.setNextPageId(myProcessor.nextPageIdFromData(pageEntity
-				.getHtmlData()));
+
+		pageEntity.setNextPageId(myProcessor.nextPageIdFromData(pageEntity.getHtmlData()));
 		if (!pageEntity.getNextPageId().equals("")) {
-			pageEntity.setNextPageUrl(myProcessor.pageUrlFromId(pageEntity
-					.getNextPageId()));
+			pageEntity.setNextPageUrl(myProcessor.pageUrlFromId(pageEntity.getNextPageId()));
 		}
 
-		pageEntity.setNextSubPageId(myProcessor
-				.nextSubPageIdFromData(pageEntity.getHtmlData()));
+		pageEntity.setNextSubPageId(myProcessor.nextSubPageIdFromData(pageEntity.getHtmlData()));
 		if (!pageEntity.getNextSubPageId().equals("")) {
-			pageEntity.setNextSubPageUrl(myProcessor.pageUrlFromId(pageEntity
-					.getNextSubPageId()));
+			pageEntity.setNextSubPageUrl(myProcessor.pageUrlFromId(pageEntity.getNextSubPageId()));
 		}
 
-		pageEntity.setPrevPageId(myProcessor.prevPageIdFromData(pageEntity
-				.getHtmlData()));
+		pageEntity.setPrevPageId(myProcessor.prevPageIdFromData(pageEntity.getHtmlData()));
 		if (!pageEntity.getPrevPageId().equals("")) {
-			pageEntity.setPrevPageUrl(myProcessor.pageUrlFromId(pageEntity
-					.getPrevPageId()));
+			pageEntity.setPrevPageUrl(myProcessor.pageUrlFromId(pageEntity.getPrevPageId()));
 		}
 
-		pageEntity.setPrevSubPageId(myProcessor
-				.prevSubPageIdFromData(pageEntity.getHtmlData()));
+		pageEntity.setPrevSubPageId(myProcessor.prevSubPageIdFromData(pageEntity.getHtmlData()));
 		if (!pageEntity.getPrevSubPageId().equals("")) {
-			pageEntity.setPrevSubPageUrl(myProcessor.pageUrlFromId(pageEntity
-					.getPrevSubPageId()));
+			pageEntity.setPrevSubPageUrl(myProcessor.pageUrlFromId(pageEntity.getPrevSubPageId()));
 		}
 
-		pageEntity.setHtmlData(myProcessor.processRawPage(pageEntity
-				.getHtmlData()));
+		pageEntity.setHtmlData(myProcessor.processRawPage(pageEntity.getHtmlData()));
 	}
 }

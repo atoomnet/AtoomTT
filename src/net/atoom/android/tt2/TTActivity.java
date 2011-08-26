@@ -32,7 +32,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.os.Handler;
 import android.os.Message;
 import android.text.Editable;
@@ -126,10 +125,6 @@ public final class TTActivity extends Activity {
 		initButtons();
 		initMainWebViewAnimator();
 
-                // TODO remove this in the final version
-                // http://android-developers.blogspot.com/2010/12/new-gingerbread-api-strictmode.html
-                StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.LAX);
-
 		myHandler.postDelayed(new Runnable() {
 			public void run() {
 				loadPageUrl(myStartPageUrl, true);
@@ -138,8 +133,8 @@ public final class TTActivity extends Activity {
 		myHandler.postDelayed(new Runnable() {
 			public void run() {
 				initLocation();
-//				updateAdView();
-				
+				// updateAdView();
+
 			}
 		}, 100);
 	}
@@ -191,36 +186,49 @@ public final class TTActivity extends Activity {
 
 	public synchronized void loadPageUrl(final String pageUrl, final boolean updateHistory) {
 
-		myPageLoadCount++;
-		PageEntity previousPageEntity = myCurrentPageEntity;
+		myPageLoadCount++; // cancels previous reloads
 
-		myCurrentPageEntity = myPageLoader.loadPage(pageUrl);
-		if (myCurrentPageEntity == null) {
-			myCurrentPageEntity = previousPageEntity;
-			Toast.makeText(getApplicationContext(), R.string.toast_pagenotfound, Toast.LENGTH_SHORT).show();
-			return;
-		}
+		myPageLoader.loadPage(pageUrl, PageLoadPriority.HIGH, new PageLoadCompletionHandler() {
+			
+			@Override
+			public void pageLoadCompleted(final PageEntity pageEntity) {
+				
+				if (pageEntity == null) {
+					myHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							Toast.makeText(getApplicationContext(), R.string.toast_pagenotfound, Toast.LENGTH_SHORT)
+									.show();
+							return;
+						}
+					});
+				}
 
-		if (previousPageEntity != null && updateHistory && !previousPageEntity.getPageUrl().equals(pageUrl)) {
-			myHistoryStack.push(previousPageEntity);
-		}
+				myHandler.post(new Runnable() {
+					@Override
+					public void run() {
+						PageEntity previousPageEntity = myCurrentPageEntity;
+						myCurrentPageEntity = pageEntity;
 
-		updateEditText();
-		updateButtons();
-		updateWebView();
+						if (previousPageEntity != null && updateHistory
+								&& !previousPageEntity.getPageUrl().equals(pageUrl)) {
+							myHistoryStack.push(previousPageEntity);
+						}
+						updateEditText();
+						updateButtons();
+						updateWebView();
 
-		// Prefetching neighbours
-		myHandler.postDelayed(new Runnable() {
-			public void run() {
-				myPageLoader.loadPage(myCurrentPageEntity.getNextPageUrl());
-				myPageLoader.loadPage(myCurrentPageEntity.getPrevPageUrl());
-				myPageLoader.loadPage(myCurrentPageEntity.getNextSubPageUrl());
-				myPageLoader.loadPage(myCurrentPageEntity.getPrevSubPageUrl());
+						myPageLoader.loadPage(myCurrentPageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
+						myPageLoader.loadPage(myCurrentPageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
+						myPageLoader.loadPage(myCurrentPageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
+						myPageLoader.loadPage(myCurrentPageEntity.getPrevSubPageUrl(), PageLoadPriority.HIGH, null);
+						
+						myHandler.postDelayed(new ReloadRunnable(TTActivity.this, myPageLoadCount), RELOAD_INTERVAL_MS);
+					}
+				});
 			}
-		}, 100);
+		});
 
-		// Scheduling reload
-		myHandler.postDelayed(new ReloadRunnable(this, myPageLoadCount), RELOAD_INTERVAL_MS);
 	}
 
 	public synchronized void reloadPageUrl(final int pageLoadCount) {
@@ -294,10 +302,10 @@ public final class TTActivity extends Activity {
 
 	private void initLocation() {
 		// dummy default in NL
-//		myLocation = new Location("AtoomTT");
-//		myLocation.setLatitude(51.84247182857143d);
-//		myLocation.setLongitude(5.862104228571428d);
-//		myLocation.setTime(System.currentTimeMillis());
+		// myLocation = new Location("AtoomTT");
+		// myLocation.setLatitude(51.84247182857143d);
+		// myLocation.setLongitude(5.862104228571428d);
+		// myLocation.setTime(System.currentTimeMillis());
 
 		LocationListener locationListener = new LocationListener() {
 			public void onLocationChanged(Location location) {
@@ -322,11 +330,11 @@ public final class TTActivity extends Activity {
 	}
 
 	private void initGraphics() {
-		//requestWindowFeature(Window.FEATURE_NO_TITLE);
+		// requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		getWindow().setTitle(getResources().getText(R.string.main_title));
 		getWindow().setSoftInputMode(1);
-                getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+		getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
 		setContentView(R.layout.main);
 	}
 
