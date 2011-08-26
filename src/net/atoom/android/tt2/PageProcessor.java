@@ -161,13 +161,16 @@ public final class PageProcessor {
                                                 title = line;
                                                 break;
                                         case 2:
-                                                // nothing found, maybe:
+                                                // still nothing found, maybe:
                                                 // ************  J  O  U  R  N  A  A  L
                                                 // less than 40 stars means title
                                                 if (line.length() > 39 &&  line.substring(39, 1).equals("*")) {
                                                         title = line;
                                                 }
                                                 break;
+                                        case 3:
+                                                // still nothing found
+                                                return "";
                                         }
                                 }
                                 line = bf.readLine();
