@@ -173,7 +173,6 @@ public final class PageProcessor {
                                         ! title.matches(".*VERWACHTING.*") &&
                                         ! title.matches(".*[lL]oting.*") &&
                                         title.matches(".*[0-9]+/[0-9]+ *$")) {  
-                                                Log.v("AtoomTT", "matches?");
                                                 title = bf.readLine();
                        }
                        // Only whitespace? Get the next line
