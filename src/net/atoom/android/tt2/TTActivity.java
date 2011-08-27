@@ -402,6 +402,7 @@ public final class TTActivity extends Activity {
 			}
 		});
 
+                /*
 		myNextPageButton = (Button) findViewById(R.id.nextpagebuttonview);
 		myNextPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -433,6 +434,7 @@ public final class TTActivity extends Activity {
 					loadPageUrl(myCurrentPageEntity.getPrevSubPageUrl(), true);
 			}
 		});
+                */
 	}
 
 	private void loadPreferences() {
@@ -501,22 +503,6 @@ public final class TTActivity extends Activity {
 			disableButton(myHomeButton);
 		else
 			enableButton(myHomeButton);
-		if (myCurrentPageEntity.getNextPageId().equals(""))
-			disableButton(myNextPageButton);
-		else
-			enableButton(myNextPageButton);
-		if (myCurrentPageEntity.getNextSubPageId().equals(""))
-			disableButton(myNextSubPageButton);
-		else
-			enableButton(myNextSubPageButton);
-		if (myCurrentPageEntity.getPrevPageId().equals(""))
-			disableButton(myPrevPageButton);
-		else
-			enableButton(myPrevPageButton);
-		if (myCurrentPageEntity.getPrevSubPageId().equals(""))
-			disableButton(myPrevSubPageButton);
-		else
-			enableButton(myPrevSubPageButton);
 	}
 
 	private void enableButton(final Button button) {

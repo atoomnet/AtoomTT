@@ -10,10 +10,11 @@
 		android:layout_height="wrap_content" android:layout_width="fill_parent" android:color="#000"
 		android:layout_alignParentBottom="true">
 		<Button android:id="@+id/homebuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:layout_weight="0" android:text="home" android:width="65dip" />
+			android:layout_weight="0" android:text="home" android:width="105dip" />
 		<EditText android:id="@+id/gotopageview" android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:layout_weight="0" android:numeric="decimal" android:width="60dip" android:maxLength="3"
+			android:layout_weight="0" android:numeric="decimal" android:width="90dip" android:maxLength="3"
 			android:layout_toRightOf="@id/homebuttonview" />
+                    <!--
 		<Button android:id="@+id/prevpagebuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:layout_weight="0" android:width="50dip" android:text="&lt;" android:layout_toRightOf="@id/gotopageview" />
 		<Button android:id="@+id/prevsubbuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -22,5 +23,6 @@
 			android:layout_weight="0" android:width="40dip" android:text="&gt;&gt;" android:layout_toRightOf="@id/prevsubbuttonview" />
 		<Button android:id="@+id/nextpagebuttonview" android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:layout_weight="0" android:width="50dip" android:text="&gt;" android:layout_toRightOf="@id/nextsubbuttonview" />
+                    -->
 	</RelativeLayout>
 </LinearLayout>
