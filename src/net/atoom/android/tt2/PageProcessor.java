@@ -33,6 +33,9 @@ public final class PageProcessor {
 	private static final Pattern PATTERN_PREVPAGEID = Pattern.compile("HREF=\"(.*)\\.html.*<!--TB_PREV-->");
 	private static final Pattern PATTERN_PREVSUBPAGEID = Pattern.compile("HREF=\"(.*)\\.html.*<!--TB_PREV_SUB-->");
 
+        private static final String CONTENT_TAGS = "\\<.*?>";
+        private static final String CONTENT_TITLE = ".*\\*+.*";
+
 	private static final String PAGEURL_PID = "[pid]";
 	private static final String PAGEURL_TMPL = "http://teletekst.nos.nl/tekst/" + PAGEURL_PID + ".html";
 	private static final String PAGEURL_BASE = "http://teletekst.nos.nl/tekst/";
@@ -139,7 +142,6 @@ public final class PageProcessor {
 	}
 
 	public String titleFromData(final String pageHtml) {
-
 		String newspageData = pageHtml.replaceAll(CONTENT_EOL_CODE, CONTENT_EOL_MARKER);
 		Matcher newsPageMatcher = PATTERN_TTDATA.matcher(newspageData);
 		if (newsPageMatcher.find()) {
@@ -153,17 +155,35 @@ public final class PageProcessor {
 				LogBridge.w("Newspagedata not found");
 		}
 
-		String page = newspageData.replaceAll("\\<.*?>", "");
+		String page = newspageData.replaceAll(CONTENT_TAGS, "");
 		String title = "";
 		BufferedReader bf = new BufferedReader(new StringReader(page));
 		try {
 			bf.readLine(); // skip line 0
 			title = bf.readLine();
-			if (title.matches(".*\\*+.*")) {
+			if (title.matches(CONTENT_TITLE)) {
 				title = bf.readLine();
 			}
-		} catch (java.io.IOException e) {
-		}
-		return title;
+                        // If it ends in 1/3 it is *not* the title, we need the next line
+                        // unless it is on the whitelist
+                        if (! title.matches(".*WATERSTAND.*") &&
+                                        ! title.matches(".*BINNENVAART.*") &&
+                                        ! title.matches(".*VEER.*") &&
+                                        ! title.matches(".*ZWEM.*") &&
+                                        ! title.matches(".*VERWACHTING.*") &&
+                                        ! title.matches(".*[lL]oting.*") &&
+                                        title.matches(".*[0-9]+/[0-9]+ *$")) {  
+                                                Log.v("AtoomTT", "matches?");
+                                                title = bf.readLine();
+                       }
+                       // Only whitespace? Get the next line
+                       if (title.matches("^ +$")) {
+                                title = bf.readLine();
+                       }
+                       title = title.replaceAll("(.*?)[0-9]+/[0-9]+ *$", "$1");
+		} catch (java.io.IOException e) { }     // Will never happen
+                // Title might have some '[* ]' in front of it
+                // &amp; not catched
+                return title.replaceAll("^.*?([^* ])", "$1");
 	}
 }
