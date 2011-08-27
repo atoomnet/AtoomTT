@@ -24,6 +24,7 @@ import net.atoom.android.tt2.util.LogBridge;
 
 public final class PageLoader {
 
+        private static final String PAGE100TITLE = "I N D E X";
 	private final static int CACHE_SIZE = 100;
 	private final static long CACHE_TIME = 59000;
 
@@ -102,7 +103,11 @@ public final class PageLoader {
 
 		pageEntity.setPageId(myProcessor.pageIdFromUrl(pageEntity.getPageUrl()));
 
-		pageEntity.setPageTitle(myProcessor.titleFromData(pageEntity.getHtmlData()));
+                if (pageEntity.getPageId().equals("100-01")) {
+		        pageEntity.setPageTitle(PAGE100TITLE);
+                } else {
+		        pageEntity.setPageTitle(myProcessor.titleFromData(pageEntity.getHtmlData()));
+                }
 
 		pageEntity.setNextPageId(myProcessor.nextPageIdFromData(pageEntity.getHtmlData()));
 		if (!pageEntity.getNextPageId().equals("")) {
