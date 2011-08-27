@@ -48,20 +48,6 @@ public final class PageProcessor {
 	private static final String CONTENT_PRE_END = "</pre>";
 
 	public String processRawPage(final String pageHtml) {
-
-		String fastTekstData = pageHtml.replaceAll(CONTENT_EOL_CODE, CONTENT_EOL_MARKER);
-		Matcher fastTekstMatcher = PATTERN_FTDATA.matcher(fastTekstData);
-		if (fastTekstMatcher.find()) {
-			if (LogBridge.isLoggable())
-				LogBridge.i("Fasttekst block found");
-			fastTekstData = fastTekstMatcher.group(1);
-			fastTekstData = fastTekstData.replaceAll(CONTENT_HREF_START, CONTENT_HREF_START + PAGEURL_BASE);
-			fastTekstData = fastTekstData.replaceAll(CONTENT_EOL_MARKER, CONTENT_EOL_CODE);
-		} else {
-			if (LogBridge.isLoggable())
-				LogBridge.w("Fasttekst not found");
-		}
-
 		String newspageData = pageHtml.replaceAll(CONTENT_EOL_CODE, CONTENT_EOL_HTML);
 		Matcher newsPageMatcher = PATTERN_TTDATA.matcher(newspageData);
 		if (newsPageMatcher.find()) {
@@ -74,7 +60,7 @@ public final class PageProcessor {
 				LogBridge.w("Newspagedata not found");
 		}
 
-		return CONTENT_PRE_START + newspageData + CONTENT_PRE_END + fastTekstData;
+		return CONTENT_PRE_START + newspageData + CONTENT_PRE_END;
 	}
 
 	public String pageIdFromUrl(final String pageUrl) {
