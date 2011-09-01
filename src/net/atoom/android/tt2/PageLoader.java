@@ -44,7 +44,6 @@ public final class PageLoader {
 			public void run() {
 				try {
 					while (true) {
-						Thread.sleep(1000);
 						PageLoadRequest plr = myLoadRequests.take();
 						PageEntity pe = doLoadPage(plr.getPageUrl());
 						if (plr.getPageLoadCompletionHandler() != null) {
@@ -59,16 +58,20 @@ public final class PageLoader {
 
 	public void loadPage(String pageUrl, PageLoadPriority pageLoadPriority,
 			PageLoadCompletionHandler pageLoadCompletionHandler) {
+
+		if (pageUrl == null || "".equals(pageUrl)) {
+			if (LogBridge.isLoggable())
+				LogBridge.w("Stop offering me invalid urls!");
+			return;
+		}
+
 		if (LogBridge.isLoggable())
-			LogBridge.i("Offering pageload request: " + pageUrl);
+			LogBridge.i("Scheduling pageload request: " + pageUrl);
+		
 		myLoadRequests.offer(new PageLoadRequest(pageUrl, pageLoadPriority, pageLoadCompletionHandler));
 	}
 
 	private PageEntity doLoadPage(final String pageUrl) {
-
-		if (pageUrl == null || "".equals(pageUrl)) {
-			return null;
-		}
 
 		PageEntity pageEntity = myPageCache.get(pageUrl);
 		if (pageEntity != null) {
