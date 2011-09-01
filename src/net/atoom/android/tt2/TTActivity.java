@@ -33,7 +33,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -71,8 +70,6 @@ public final class TTActivity extends Activity {
 	private static final int HISTORY_SIZE = 50;
 	private static final long RELOAD_INTERVAL_MS = 60000;
 
-	private static final int MESSAGE_UPDATE_ADVIEW = 1;
-
 	private final PageLoader myPageLoader;
 	private final Handler myHandler;
 	private final BoundStack<PageEntity> myHistoryStack;
@@ -93,24 +90,19 @@ public final class TTActivity extends Activity {
 	private int myPageLoadCount = 0;
 
 	private volatile Location myLocation = null;
+	private volatile boolean isAdinitialized = false;
 	private volatile boolean isStopped = false;
 
 	public TTActivity() {
+		myHandler = new Handler();
 		myPageLoader = new PageLoader();
 		myHistoryStack = new BoundStack<PageEntity>(HISTORY_SIZE);
 
-		myHandler = new Handler() {
-			@Override
-			public void handleMessage(Message msg) {
-				switch (msg.arg1) {
-				case MESSAGE_UPDATE_ADVIEW:
-					updateAdView();
-					break;
-				default:
-					break;
-				}
-			}
-		};
+		// default location in NL
+		myLocation = new Location("AtoomTT");
+		myLocation.setLatitude(52.4498d);
+		myLocation.setLongitude(4.8223d);
+		myLocation.setTime(System.currentTimeMillis());
 	}
 
 	@Override
@@ -124,19 +116,18 @@ public final class TTActivity extends Activity {
 		initEditText();
 		initButtons();
 		initMainWebViewAnimator();
+		initLocationRequest();
+
+		loadPageUrl(myStartPageUrl, true);
 
 		myHandler.postDelayed(new Runnable() {
 			public void run() {
-				loadPageUrl(myStartPageUrl, true);
+				if (!isAdinitialized) {
+					isAdinitialized = true;
+					initAdView();
+				}
 			}
-		}, 100);
-		myHandler.postDelayed(new Runnable() {
-			public void run() {
-				initLocation();
-				// updateAdView();
-
-			}
-		}, 100);
+		}, 10000);
 	}
 
 	@Override
@@ -300,33 +291,36 @@ public final class TTActivity extends Activity {
 		return true;
 	}
 
-	private void initLocation() {
-		// dummy default in NL
-		// myLocation = new Location("AtoomTT");
-		// myLocation.setLatitude(51.84247182857143d);
-		// myLocation.setLongitude(5.862104228571428d);
-		// myLocation.setTime(System.currentTimeMillis());
+	private void initLocationRequest() {
+		final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		if (locationManager != null) {
+			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f,
+					new LocationListener() {
+						public void onLocationChanged(final Location location) {
+							if (LogBridge.isLoggable())
+								LogBridge.i("Location update recieved: " + location);
+							locationManager.removeUpdates(this);
+							if (!isAdinitialized) {
+								isAdinitialized = true;
+								myLocation = location;
+								myHandler.post(new Runnable() {
+									public void run() {
+										initAdView();
+									}
+								});
+							}
+						}
 
-		LocationListener locationListener = new LocationListener() {
-			public void onLocationChanged(Location location) {
-				myLocation = location;
-				Message msg = new Message();
-				msg.arg1 = MESSAGE_UPDATE_ADVIEW;
-				myHandler.sendMessageDelayed(msg, 100);
-			}
+						public void onStatusChanged(String provider, int status, Bundle extras) {
+						}
 
-			public void onStatusChanged(String provider, int status, Bundle extras) {
-			}
+						public void onProviderEnabled(String provider) {
+						}
 
-			public void onProviderEnabled(String provider) {
-			}
-
-			public void onProviderDisabled(String provider) {
-			}
-		};
-
-		LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f, locationListener);
+						public void onProviderDisabled(String provider) {
+						}
+					});
+		}
 	}
 
 	private void initGraphics() {
@@ -434,6 +428,15 @@ public final class TTActivity extends Activity {
 		});
 	}
 
+	private void initAdView() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing AdView : " + myLocation);
+		AdView adView = (AdView) findViewById(R.id.ad);
+		AdRequest adRequest = new AdRequest();
+		adRequest.setLocation(myLocation);
+		adView.loadAd(adRequest);
+	}
+
 	private void loadPreferences() {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
 		if (settings != null) {
@@ -491,13 +494,6 @@ public final class TTActivity extends Activity {
 	private void updateWebView() {
 		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER, myCurrentPageEntity.getHtmlData());
 		myMainWebViewAnimator.updateWebView(htmlData);
-	}
-
-	private void updateAdView() {
-		AdView adView = (AdView) findViewById(R.id.ad);
-		AdRequest adRequest = new AdRequest();
-		adRequest.setLocation(myLocation);
-		adView.loadAd(adRequest);
 	}
 
 	private void updateButtons() {
