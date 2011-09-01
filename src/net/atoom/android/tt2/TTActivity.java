@@ -477,7 +477,12 @@ public final class TTActivity extends Activity {
 		if (settings != null) {
 			SharedPreferences.Editor editor = settings.edit();
 			if (editor != null) {
-				editor.putString(PREFS_CURRENT_URL, myCurrentPageEntity.getPageUrl());
+				PageEntity pageEntity = myCurrentPageEntity;
+				if (pageEntity != null) {
+					editor.putString(PREFS_CURRENT_URL, myCurrentPageEntity.getPageUrl());
+				} else {
+					editor.putString(PREFS_CURRENT_URL, "");
+				}
 				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
 				editor.commit();
 			}
