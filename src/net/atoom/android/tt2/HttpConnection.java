@@ -27,6 +27,9 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 
 public final class HttpConnection {
 
@@ -34,9 +37,15 @@ public final class HttpConnection {
 	private static final String ETAG_HEADER = "ETag";
 	private static final String DEFAULT_ENCODING = "Cp1252";
 
-	private final DefaultHttpClient myHttpClient = new DefaultHttpClient();
+	private final DefaultHttpClient myHttpClient;
 
 	public HttpConnection() {
+		HttpParams httpParameters = new BasicHttpParams();
+		int timeoutConnection = 5000;
+		HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
+		int timeoutSocket = 5000;
+		HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
+		myHttpClient = new DefaultHttpClient(httpParameters);
 	}
 
 	public synchronized PageEntity loadPage(final String pageUrl) {
