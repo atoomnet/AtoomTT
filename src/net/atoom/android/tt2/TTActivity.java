@@ -405,7 +405,8 @@ public final class TTActivity extends Activity {
 		myNextPageButton = (Button) findViewById(R.id.nextpagebuttonview);
 		myNextPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				if (!myCurrentPageEntity.getNextPageUrl().equals(""))
+				PageEntity pageEntity = myCurrentPageEntity;
+				if (pageEntity != null && !pageEntity.getNextPageUrl().equals(""))
 					loadPageUrl(myCurrentPageEntity.getNextPageUrl(), true);
 			}
 		});
@@ -413,7 +414,8 @@ public final class TTActivity extends Activity {
 		myNextSubPageButton = (Button) findViewById(R.id.nextsubbuttonview);
 		myNextSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				if (!myCurrentPageEntity.getNextSubPageUrl().equals(""))
+				PageEntity pageEntity = myCurrentPageEntity;
+				if (pageEntity != null && !myCurrentPageEntity.getNextSubPageUrl().equals(""))
 					loadPageUrl(myCurrentPageEntity.getNextSubPageUrl(), true);
 			}
 		});
@@ -421,7 +423,8 @@ public final class TTActivity extends Activity {
 		myPrevPageButton = (Button) findViewById(R.id.prevpagebuttonview);
 		myPrevPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				if (!myCurrentPageEntity.getPrevPageUrl().equals(""))
+				PageEntity pageEntity = myCurrentPageEntity;
+				if (pageEntity != null && !myCurrentPageEntity.getPrevPageUrl().equals(""))
 					loadPageUrl(myCurrentPageEntity.getPrevPageUrl(), true);
 			}
 		});
@@ -429,7 +432,8 @@ public final class TTActivity extends Activity {
 		myPrevSubPageButton = (Button) findViewById(R.id.prevsubbuttonview);
 		myPrevSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				if (!myCurrentPageEntity.getPrevSubPageUrl().equals(""))
+				PageEntity pageEntity = myCurrentPageEntity;
+				if (pageEntity != null && !myCurrentPageEntity.getPrevSubPageUrl().equals(""))
 					loadPageUrl(myCurrentPageEntity.getPrevSubPageUrl(), true);
 			}
 		});
