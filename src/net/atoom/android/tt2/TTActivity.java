@@ -23,9 +23,6 @@ import java.io.InputStreamReader;
 import net.atoom.android.tt2.util.BoundStack;
 import net.atoom.android.tt2.util.LogBridge;
 import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -192,10 +189,10 @@ public final class TTActivity extends Activity {
 		myPageLoadCount++; // cancels previous reloads
 
 		myPageLoader.loadPage(pageUrl, PageLoadPriority.HIGH, new PageLoadCompletionHandler() {
-			
+
 			@Override
 			public void pageLoadCompleted(final PageEntity pageEntity) {
-				
+
 				if (pageEntity == null) {
 					myHandler.post(new Runnable() {
 						@Override
@@ -225,7 +222,7 @@ public final class TTActivity extends Activity {
 						myPageLoader.loadPage(myCurrentPageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
 						myPageLoader.loadPage(myCurrentPageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
 						myPageLoader.loadPage(myCurrentPageEntity.getPrevSubPageUrl(), PageLoadPriority.HIGH, null);
-						
+
 						myHandler.postDelayed(new ReloadRunnable(TTActivity.this, myPageLoadCount), RELOAD_INTERVAL_MS);
 					}
 				});
@@ -333,11 +330,10 @@ public final class TTActivity extends Activity {
 	}
 
 	private void initGraphics() {
-		// requestWindowFeature(Window.FEATURE_NO_TITLE);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		getWindow().setTitle(getResources().getText(R.string.main_title));
 		getWindow().setSoftInputMode(1);
-		getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
 		setContentView(R.layout.main);
 	}
 
