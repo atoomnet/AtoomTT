@@ -206,18 +206,18 @@ public final class TTActivity extends Activity {
 								&& !previousPageEntity.getPageUrl().equals(pageUrl)) {
 							myHistoryStack.push(previousPageEntity);
 						}
-						updateEditText();
-						updateButtons();
-						updateWebView();
+						updateEditText(pageEntity);
+						updateButtons(pageEntity);
+						updateWebView(pageEntity);
 
 						final ActionBar actionBar = getActionBar();
 						actionBar.setTitle(myCurrentPageEntity.getPageTitle());
 						
-						myPageLoader.loadPage(myCurrentPageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(myCurrentPageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(myCurrentPageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(myCurrentPageEntity.getPrevSubPageUrl(), PageLoadPriority.HIGH, null);
-						
+						myPageLoader.loadPage(pageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
+						myPageLoader.loadPage(pageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
+						myPageLoader.loadPage(pageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
+						myPageLoader.loadPage(pageEntity.getPrevSubPageUrl(), PageLoadPriority.HIGH, null);
+
 						myHandler.postDelayed(new ReloadRunnable(TTActivity.this, myPageLoadCount), RELOAD_INTERVAL_MS);
 					}
 				});
@@ -227,11 +227,12 @@ public final class TTActivity extends Activity {
 	}
 
 	public synchronized void reloadPageUrl(final int pageLoadCount) {
-		if (myPageLoadCount == pageLoadCount && !isStopped) {
+		PageEntity pageEntity = myCurrentPageEntity;
+		if (myPageLoadCount == pageLoadCount && !isStopped && pageEntity != null) {
 			if (LogBridge.isLoggable())
 				LogBridge.i("Reloading...");
 			Toast.makeText(getApplicationContext(), R.string.toast_pagereload, Toast.LENGTH_SHORT).show();
-			loadPageUrl(myCurrentPageEntity.getPageUrl(), false);
+			loadPageUrl(pageEntity.getPageUrl(), false);
 		} else {
 			if (LogBridge.isLoggable())
 				LogBridge.i("Aborting reload");
@@ -239,24 +240,26 @@ public final class TTActivity extends Activity {
 	}
 
 	public synchronized void loadNextPage() {
-		if (myCurrentPageEntity != null) {
-			if (myCurrentPageEntity.getNextSubPageUrl() != null) {
-				loadPageUrl(myCurrentPageEntity.getNextSubPageUrl(), true);
+		PageEntity pageEntity = myCurrentPageEntity;
+		if (pageEntity != null) {
+			if (pageEntity.getNextSubPageUrl() != null) {
+				loadPageUrl(pageEntity.getNextSubPageUrl(), true);
 			} else {
-				if (myCurrentPageEntity.getNextPageUrl() != null) {
-					loadPageUrl(myCurrentPageEntity.getNextPageUrl(), true);
+				if (pageEntity.getNextPageUrl() != null) {
+					loadPageUrl(pageEntity.getNextPageUrl(), true);
 				}
 			}
 		}
 	}
 
 	public synchronized void loadPrevPage() {
-		if (myCurrentPageEntity != null) {
-			if (myCurrentPageEntity.getPrevSubPageUrl() != null) {
-				loadPageUrl(myCurrentPageEntity.getPrevSubPageUrl(), true);
+		PageEntity pageEntity = myCurrentPageEntity;
+		if (pageEntity != null) {
+			if (pageEntity.getPrevSubPageUrl() != null) {
+				loadPageUrl(pageEntity.getPrevSubPageUrl(), true);
 			} else {
-				if (myCurrentPageEntity.getPrevPageUrl() != null) {
-					loadPageUrl(myCurrentPageEntity.getPrevPageUrl(), true);
+				if (pageEntity.getPrevPageUrl() != null) {
+					loadPageUrl(pageEntity.getPrevPageUrl(), true);
 				}
 			}
 		}
@@ -353,8 +356,9 @@ public final class TTActivity extends Activity {
 
 					String newPageId = myPageEditText.getText() + "";
 					String currentPageId = "";
-					if (myCurrentPageEntity != null && myCurrentPageEntity.getPageId() != null) {
-						currentPageId = myCurrentPageEntity.getPageId();
+					PageEntity pageEntity = myCurrentPageEntity;
+					if (pageEntity != null && pageEntity.getPageId() != null) {
+						currentPageId = pageEntity.getPageId();
 						if (currentPageId.length() == 6) {
 							currentPageId = currentPageId.substring(0, 3);
 						}
@@ -401,7 +405,7 @@ public final class TTActivity extends Activity {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
 				if (pageEntity != null && !pageEntity.getNextPageUrl().equals(""))
-					loadPageUrl(myCurrentPageEntity.getNextPageUrl(), true);
+					loadPageUrl(pageEntity.getNextPageUrl(), true);
 			}
 		});
 
@@ -409,8 +413,8 @@ public final class TTActivity extends Activity {
 		myNextSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !myCurrentPageEntity.getNextSubPageUrl().equals(""))
-					loadPageUrl(myCurrentPageEntity.getNextSubPageUrl(), true);
+				if (pageEntity != null && !pageEntity.getNextSubPageUrl().equals(""))
+					loadPageUrl(pageEntity.getNextSubPageUrl(), true);
 			}
 		});
 
@@ -418,8 +422,8 @@ public final class TTActivity extends Activity {
 		myPrevPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !myCurrentPageEntity.getPrevPageUrl().equals(""))
-					loadPageUrl(myCurrentPageEntity.getPrevPageUrl(), true);
+				if (pageEntity != null && !pageEntity.getPrevPageUrl().equals(""))
+					loadPageUrl(pageEntity.getPrevPageUrl(), true);
 			}
 		});
 
@@ -427,8 +431,8 @@ public final class TTActivity extends Activity {
 		myPrevSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !myCurrentPageEntity.getPrevSubPageUrl().equals(""))
-					loadPageUrl(myCurrentPageEntity.getPrevSubPageUrl(), true);
+				if (pageEntity != null && !pageEntity.getPrevSubPageUrl().equals(""))
+					loadPageUrl(pageEntity.getPrevSubPageUrl(), true);
 			}
 		});
 	}
@@ -482,7 +486,7 @@ public final class TTActivity extends Activity {
 			if (editor != null) {
 				PageEntity pageEntity = myCurrentPageEntity;
 				if (pageEntity != null) {
-					editor.putString(PREFS_CURRENT_URL, myCurrentPageEntity.getPageUrl());
+					editor.putString(PREFS_CURRENT_URL, pageEntity.getPageUrl());
 				} else {
 					editor.putString(PREFS_CURRENT_URL, "");
 				}
@@ -492,33 +496,33 @@ public final class TTActivity extends Activity {
 		}
 	}
 
-	private void updateEditText() {
-		myPageEditText.setText(myCurrentPageEntity.getPageId());
+	private void updateEditText(PageEntity pageEntity) {
+		myPageEditText.setText(pageEntity.getPageId());
 	}
 
-	private void updateWebView() {
-		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER, myCurrentPageEntity.getHtmlData());
+	private void updateWebView(PageEntity pageEntity) {
+		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER, pageEntity.getHtmlData());
 		myMainWebViewAnimator.updateWebView(htmlData);
 	}
 
-	private void updateButtons() {
-		if (myCurrentPageEntity.getPageUrl().equals(myHomePageUrl))
+	private void updateButtons(PageEntity pageEntity) {
+		if (pageEntity.getPageUrl().equals(myHomePageUrl))
 			disableButton(myHomeButton);
 		else
 			enableButton(myHomeButton);
-		if (myCurrentPageEntity.getNextPageId().equals(""))
+		if (pageEntity.getNextPageId().equals(""))
 			disableButton(myNextPageButton);
 		else
 			enableButton(myNextPageButton);
-		if (myCurrentPageEntity.getNextSubPageId().equals(""))
+		if (pageEntity.getNextSubPageId().equals(""))
 			disableButton(myNextSubPageButton);
 		else
 			enableButton(myNextSubPageButton);
-		if (myCurrentPageEntity.getPrevPageId().equals(""))
+		if (pageEntity.getPrevPageId().equals(""))
 			disableButton(myPrevPageButton);
 		else
 			enableButton(myPrevPageButton);
-		if (myCurrentPageEntity.getPrevSubPageId().equals(""))
+		if (pageEntity.getPrevSubPageId().equals(""))
 			disableButton(myPrevSubPageButton);
 		else
 			enableButton(myPrevSubPageButton);
