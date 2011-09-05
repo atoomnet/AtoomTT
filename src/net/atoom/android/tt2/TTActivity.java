@@ -190,9 +190,9 @@ public final class TTActivity extends Activity {
 						public void run() {
 							Toast.makeText(getApplicationContext(), R.string.toast_pagenotfound, Toast.LENGTH_SHORT)
 									.show();
-							return;
 						}
 					});
+					return;
 				}
 
 				myHandler.post(new Runnable() {
