@@ -70,6 +70,7 @@ public final class TTActivity extends Activity {
 
 	private static final int HISTORY_SIZE = 50;
 	private static final long RELOAD_INTERVAL_MS = 60000;
+	private static final long AD_INIT_DELAY_MS = 3000;
 
 	private final PageLoader myPageLoader;
 	private final Handler myHandler;
@@ -128,7 +129,7 @@ public final class TTActivity extends Activity {
 					initAdView();
 				}
 			}
-		}, 10000);
+		}, AD_INIT_DELAY_MS);
 	}
 
 	@Override
