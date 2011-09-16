@@ -172,6 +172,7 @@ public final class PageProcessor {
                                         ! title.matches(".*ZWEM.*") &&
                                         ! title.matches(".*VERWACHTING.*") &&
                                         ! title.matches(".*[lL]oting.*") &&
+                                        ! title.matches(".*B I N N E N L A N D.*") && // 102
                                         title.matches(".*[0-9]+/[0-9]+ *$")) {  
                                                 title = bf.readLine();
                        }
