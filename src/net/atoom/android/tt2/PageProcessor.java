@@ -182,7 +182,10 @@ public final class PageProcessor {
                        title = title.replaceAll("(.*?)[0-9]+/[0-9]+ *$", "$1");
 		} catch (java.io.IOException e) { }     // Will never happen
                 // Title might have some '[* ]' in front of it
-                // &amp; not catched
-                return title.replaceAll("^.*?([^* ])", "$1");
+                // Kill some html entities
+                title = title.replaceAll("^.*?([^* ])", "$1");
+                title = title.replace("&amp;", "&");
+                title = title.replace("&quot;", "\"");
+                return title;
 	}
 }
