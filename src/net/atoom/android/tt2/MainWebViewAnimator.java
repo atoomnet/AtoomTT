@@ -15,6 +15,7 @@
  */
 package net.atoom.android.tt2;
 
+import android.app.Activity;
 import android.graphics.Color;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -30,15 +31,16 @@ public class MainWebViewAnimator extends ViewAnimator {
 	private static final String CONTENT_MIME_TYPE = "text/html";
 	private static final String CONTENT_ENCODING = "utf-8";
 
-	private final TTActivity myTTActivity;
+	private final Activity myTTActivity;
+	private final TTMainViewFragment myTTMainViewFragment;
 	private final GestureDetector myGestureDetector;
 	private final WebView myWebView;
 
-	public MainWebViewAnimator(TTActivity ttActivity) {
+	public MainWebViewAnimator(Activity ttActivity, TTMainViewFragment fragment) {
 		super(ttActivity);
 		myTTActivity = ttActivity;
-		myGestureDetector = new GestureDetector(myTTActivity,
-				new MainWebViewGestureDetector(this));
+		myTTMainViewFragment = fragment;
+		myGestureDetector = new GestureDetector(myTTActivity, new MainWebViewGestureDetector(this));
 
 		myWebView = new WebView(myTTActivity);
 		initWebView();
@@ -46,16 +48,16 @@ public class MainWebViewAnimator extends ViewAnimator {
 	}
 
 	public void updateWebView(final String htmlData) {
-		myWebView.loadDataWithBaseURL(CONTENT_BASEURL, htmlData,
-				CONTENT_MIME_TYPE, CONTENT_ENCODING, CONTENT_STARTPAGEURL);
+		myWebView.loadDataWithBaseURL(CONTENT_BASEURL, htmlData, CONTENT_MIME_TYPE, CONTENT_ENCODING,
+				CONTENT_STARTPAGEURL);
 	}
 
 	public void loadNextPage() {
-		myTTActivity.loadNextPage();
+		myTTMainViewFragment.loadNextPage();
 	}
 
 	public void loadPrevPage() {
-		myTTActivity.loadPrevPage();
+		myTTMainViewFragment.loadPrevPage();
 	}
 
 	@Override
@@ -65,7 +67,7 @@ public class MainWebViewAnimator extends ViewAnimator {
 
 	private void initWebView() {
 		myWebView.setOnTouchListener(new MainWebViewOnTouchListener(this));
-		myWebView.setWebViewClient(new MainWebViewClient(myTTActivity));
+		myWebView.setWebViewClient(new MainWebViewClient(myTTActivity, myTTMainViewFragment));
 		myWebView.setScrollContainer(false);
 		myWebView.setVerticalScrollBarEnabled(true);
 		myWebView.setHorizontalScrollBarEnabled(false);

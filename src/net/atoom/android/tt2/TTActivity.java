@@ -113,9 +113,12 @@ public final class TTActivity extends Activity {
 		loadTemplate();
 
 		initGraphics();
+		
+		if(true)
+			return;
 		initEditText();
 		initButtons();
-		initMainWebViewAnimator();
+//		initMainWebViewAnimator();
 		initLocationRequest();
 
 		loadPageUrl(myHomePageUrl, true);
@@ -177,51 +180,51 @@ public final class TTActivity extends Activity {
 
 	public synchronized void loadPageUrl(final String pageUrl, final boolean updateHistory) {
 
-		myPageLoadCount++; // cancels previous reloads
-
-		myPageLoader.loadPage(pageUrl, PageLoadPriority.HIGH, new PageLoadCompletionHandler() {
-			
-			@Override
-			public void pageLoadCompleted(final PageEntity pageEntity) {
-				
-				if (pageEntity == null) {
-					myHandler.post(new Runnable() {
-						@Override
-						public void run() {
-							Toast.makeText(getApplicationContext(), R.string.toast_pagenotfound, Toast.LENGTH_SHORT)
-									.show();
-						}
-					});
-					return;
-				}
-
-				myHandler.post(new Runnable() {
-					@Override
-					public void run() {
-						PageEntity previousPageEntity = myCurrentPageEntity;
-						myCurrentPageEntity = pageEntity;
-
-						if (previousPageEntity != null && updateHistory
-								&& !previousPageEntity.getPageUrl().equals(pageUrl)) {
-							myHistoryStack.push(previousPageEntity);
-						}
-						updateEditText(pageEntity);
-						updateButtons(pageEntity);
-						updateWebView(pageEntity);
-
-						final ActionBar actionBar = getActionBar();
-						actionBar.setTitle(myCurrentPageEntity.getPageTitle());
-						
-						myPageLoader.loadPage(pageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(pageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(pageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(pageEntity.getPrevSubPageUrl(), PageLoadPriority.LOW, null);
-
-						myHandler.postDelayed(new ReloadRunnable(TTActivity.this, myPageLoadCount), RELOAD_INTERVAL_MS);
-					}
-				});
-			}
-		});
+//		myPageLoadCount++; // cancels previous reloads
+//
+//		myPageLoader.loadPage(pageUrl, PageLoadPriority.HIGH, new PageLoadCompletionHandler() {
+//			
+//			@Override
+//			public void pageLoadCompleted(final PageEntity pageEntity) {
+//				
+//				if (pageEntity == null) {
+//					myHandler.post(new Runnable() {
+//						@Override
+//						public void run() {
+//							Toast.makeText(getApplicationContext(), R.string.toast_pagenotfound, Toast.LENGTH_SHORT)
+//									.show();
+//						}
+//					});
+//					return;
+//				}
+//
+//				myHandler.post(new Runnable() {
+//					@Override
+//					public void run() {
+//						PageEntity previousPageEntity = myCurrentPageEntity;
+//						myCurrentPageEntity = pageEntity;
+//
+//						if (previousPageEntity != null && updateHistory
+//								&& !previousPageEntity.getPageUrl().equals(pageUrl)) {
+//							myHistoryStack.push(previousPageEntity);
+//						}
+//						updateEditText(pageEntity);
+//						updateButtons(pageEntity);
+//						updateWebView(pageEntity);
+//
+//						final ActionBar actionBar = getActionBar();
+//						actionBar.setTitle(myCurrentPageEntity.getPageTitle());
+//						
+//						myPageLoader.loadPage(pageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
+//						myPageLoader.loadPage(pageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
+//						myPageLoader.loadPage(pageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
+//						myPageLoader.loadPage(pageEntity.getPrevSubPageUrl(), PageLoadPriority.LOW, null);
+//
+//						myHandler.postDelayed(new ReloadRunnable(TTActivity.this, myPageLoadCount), RELOAD_INTERVAL_MS);
+//					}
+//				});
+//			}
+//		});
 
 	}
 
@@ -338,11 +341,11 @@ public final class TTActivity extends Activity {
 		setContentView(R.layout.main);
 	}
 
-	private void initMainWebViewAnimator() {
-		myMainWebViewAnimator = new MainWebViewAnimator(this);
-		FrameLayout frameLayout = (FrameLayout) findViewById(R.id.webview);
-		frameLayout.addView(myMainWebViewAnimator);
-	}
+//	private void initMainWebViewAnimator() {
+//		myMainWebViewAnimator = new MainWebViewAnimator(this);
+//		FrameLayout frameLayout = (FrameLayout) findViewById(R.id.webview);
+//		frameLayout.addView(myMainWebViewAnimator);
+//	}
 
 	private void initEditText() {
 

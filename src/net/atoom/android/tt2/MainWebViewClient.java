@@ -16,22 +16,25 @@
 package net.atoom.android.tt2;
 
 import net.atoom.android.tt2.util.LogBridge;
+import android.app.Activity;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public final class MainWebViewClient extends WebViewClient {
 
-	private final TTActivity myActivity;
+	private final Activity myActivity;
+	private final TTMainViewFragment myFragment;
 
-	public MainWebViewClient(TTActivity activity) {
+	public MainWebViewClient(Activity activity, TTMainViewFragment fragment) {
 		myActivity = activity;
+		myFragment = fragment;
 	}
 
 	@Override
 	public boolean shouldOverrideUrlLoading(WebView webView, String pageUrl) {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Handling url: " + pageUrl);
-		myActivity.loadPageUrl(pageUrl, true);
+		myFragment.loadPageUrl(pageUrl, true);
 		return true;
 	}
 }

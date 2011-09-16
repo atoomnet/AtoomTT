@@ -18,10 +18,10 @@ package net.atoom.android.tt2;
 
 public final class ReloadRunnable implements Runnable {
 
-	private final TTActivity myActivity;
+	private final TTMainViewFragment myActivity;
 	private final int myPageLoadCount;
 
-	public ReloadRunnable(final TTActivity activity, final int pageLoadCount) {
+	public ReloadRunnable(final TTMainViewFragment activity, final int pageLoadCount) {
 		myActivity = activity;
 		myPageLoadCount = pageLoadCount;
 	}
