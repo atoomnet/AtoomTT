@@ -186,6 +186,8 @@ public final class PageProcessor {
                 title = title.replaceAll("^.*?([^* ])", "$1");
                 title = title.replace("&amp;", "&");
                 title = title.replace("&quot;", "\"");
+                title = title.replace("&gt;", ">");
+                title = title.replace("&lt;", "<");
                 return title;
 	}
 }
