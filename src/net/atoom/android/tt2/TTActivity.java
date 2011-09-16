@@ -58,7 +58,6 @@ public final class TTActivity extends Activity {
 
 	private static final String CONTENT_STARTPAGEURL = "http://teletekst.nos.nl/tekst/101-01.html";
 
-	private static final String PREFS_CURRENT_URL = "currentUrl";
 	private static final String PREFS_HOMEPAGE_URL = "homepageUrl";
 
 	private static final String TEMPLATE_FILENAME = "template.html";
@@ -450,7 +449,6 @@ public final class TTActivity extends Activity {
 	private void loadPreferences() {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
 		if (settings != null) {
-			myStartPageUrl = settings.getString(PREFS_CURRENT_URL, CONTENT_STARTPAGEURL);
 			myHomePageUrl = settings.getString(PREFS_HOMEPAGE_URL, CONTENT_STARTPAGEURL);
 		}
 	}
@@ -485,12 +483,6 @@ public final class TTActivity extends Activity {
 		if (settings != null) {
 			SharedPreferences.Editor editor = settings.edit();
 			if (editor != null) {
-				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null) {
-					editor.putString(PREFS_CURRENT_URL, pageEntity.getPageUrl());
-				} else {
-					editor.putString(PREFS_CURRENT_URL, "");
-				}
 				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
 				editor.commit();
 			}

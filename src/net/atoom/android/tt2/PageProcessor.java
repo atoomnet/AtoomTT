@@ -172,6 +172,7 @@ public final class PageProcessor {
                                         ! title.matches(".*ZWEM.*") &&
                                         ! title.matches(".*VERWACHTING.*") &&
                                         ! title.matches(".*[lL]oting.*") &&
+                                        ! title.matches(".*B I N N E N L A N D.*") && // 102
                                         title.matches(".*[0-9]+/[0-9]+ *$")) {  
                                                 title = bf.readLine();
                        }
@@ -182,7 +183,12 @@ public final class PageProcessor {
                        title = title.replaceAll("(.*?)[0-9]+/[0-9]+ *$", "$1");
 		} catch (java.io.IOException e) { }     // Will never happen
                 // Title might have some '[* ]' in front of it
-                // &amp; not catched
-                return title.replaceAll("^.*?([^* ])", "$1");
+                // Kill some html entities
+                title = title.replaceAll("^.*?([^* ])", "$1");
+                title = title.replace("&amp;", "&");
+                title = title.replace("&quot;", "\"");
+                title = title.replace("&gt;", ">");
+                title = title.replace("&lt;", "<");
+                return title;
 	}
 }
