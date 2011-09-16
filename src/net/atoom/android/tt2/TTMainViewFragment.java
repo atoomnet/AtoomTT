@@ -105,18 +105,18 @@ public class TTMainViewFragment extends Fragment {
 		initEditText(view);
 		initButtons(view);
 		initMainWebViewAnimator(view);
-		initLocationRequest();
+//		initLocationRequest();
 
 		loadPageUrl(myStartPageUrl, true);
 
-		myHandler.postDelayed(new Runnable() {
-			public void run() {
-				if (!isAdinitialized) {
-					isAdinitialized = true;
-					initAdView(view);
-				}
-			}
-		}, AD_INIT_DELAY_MS);
+//		myHandler.postDelayed(new Runnable() {
+//			public void run() {
+//				if (!isAdinitialized) {
+//					isAdinitialized = true;
+//					initAdView(view);
+//				}
+//			}
+//		}, AD_INIT_DELAY_MS);
 		return view;
 	}
 
@@ -288,38 +288,38 @@ public class TTMainViewFragment extends Fragment {
 		return true;
 	}
 
-	private void initLocationRequest() {
-		final LocationManager locationManager = (LocationManager) getActivity().getSystemService(
-				Context.LOCATION_SERVICE);
-		if (locationManager != null) {
-			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f,
-					new LocationListener() {
-						public void onLocationChanged(final Location location) {
-							if (LogBridge.isLoggable())
-								LogBridge.i("Location update recieved: " + location);
-							locationManager.removeUpdates(this);
-							if (!isAdinitialized) {
-								isAdinitialized = true;
-								myLocation = location;
-								myHandler.post(new Runnable() {
-									public void run() {
-										initAdView(myView);
-									}
-								});
-							}
-						}
-
-						public void onStatusChanged(String provider, int status, Bundle extras) {
-						}
-
-						public void onProviderEnabled(String provider) {
-						}
-
-						public void onProviderDisabled(String provider) {
-						}
-					});
-		}
-	}
+//	private void initLocationRequest() {
+//		final LocationManager locationManager = (LocationManager) getActivity().getSystemService(
+//				Context.LOCATION_SERVICE);
+//		if (locationManager != null) {
+//			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f,
+//					new LocationListener() {
+//						public void onLocationChanged(final Location location) {
+//							if (LogBridge.isLoggable())
+//								LogBridge.i("Location update recieved: " + location);
+//							locationManager.removeUpdates(this);
+//							if (!isAdinitialized) {
+//								isAdinitialized = true;
+//								myLocation = location;
+//								myHandler.post(new Runnable() {
+//									public void run() {
+//										initAdView(myView);
+//									}
+//								});
+//							}
+//						}
+//
+//						public void onStatusChanged(String provider, int status, Bundle extras) {
+//						}
+//
+//						public void onProviderEnabled(String provider) {
+//						}
+//
+//						public void onProviderDisabled(String provider) {
+//						}
+//					});
+//		}
+//	}
 
 	private void initMainWebViewAnimator(View view) {
 		myMainWebViewAnimator = new MainWebViewAnimator(getActivity(), this);
@@ -328,7 +328,7 @@ public class TTMainViewFragment extends Fragment {
 	}
 
 	private void initEditText(View view) {
-
+		
 		myPageEditText = (EditText) view.findViewById(R.id.gotopageview);
 		myPageEditText.setSelectAllOnFocus(true);
 		myPageEditText.addTextChangedListener(new TextWatcher() {
@@ -419,14 +419,14 @@ public class TTMainViewFragment extends Fragment {
 		});
 	}
 
-	private void initAdView(View view) {
-		if (LogBridge.isLoggable())
-			LogBridge.i("Initializing AdView : " + myLocation);
-		AdView adView = (AdView) view.findViewById(R.id.ad);
-		AdRequest adRequest = new AdRequest();
-		adRequest.setLocation(myLocation);
-		adView.loadAd(adRequest);
-	}
+//	private void initAdView(View view) {
+//		if (LogBridge.isLoggable())
+//			LogBridge.i("Initializing AdView : " + myLocation);
+//		AdView adView = (AdView) view.findViewById(R.id.ad);
+//		AdRequest adRequest = new AdRequest();
+//		adRequest.setLocation(myLocation);
+//		adView.loadAd(adRequest);
+//	}
 
 	private void loadPreferences() {
 		SharedPreferences settings = getActivity().getSharedPreferences(LOGGING_TAG, Activity.MODE_PRIVATE);

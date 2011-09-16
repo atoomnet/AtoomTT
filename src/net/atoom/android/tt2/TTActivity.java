@@ -109,28 +109,33 @@ public final class TTActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		loadPreferences();
-		loadTemplate();
+//		loadPreferences();
+//		loadTemplate();
+//		initGraphics();
 
-		initGraphics();
-		
+//		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//		getWindow().setTitle(getResources().getText(R.string.main_title));
+//		getWindow().setSoftInputMode(1);
+//		getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+		setContentView(R.layout.main);
+
 		if(true)
 			return;
 		initEditText();
 		initButtons();
 //		initMainWebViewAnimator();
-		initLocationRequest();
+//		initLocationRequest();
 
 		loadPageUrl(myHomePageUrl, true);
 
-		myHandler.postDelayed(new Runnable() {
-			public void run() {
-				if (!isAdinitialized) {
-					isAdinitialized = true;
-					initAdView();
-				}
-			}
-		}, AD_INIT_DELAY_MS);
+//		myHandler.postDelayed(new Runnable() {
+//			public void run() {
+//				if (!isAdinitialized) {
+//					isAdinitialized = true;
+//					initAdView();
+//				}
+//			}
+//		}, AD_INIT_DELAY_MS);
 	}
 
 	@Override
@@ -300,37 +305,37 @@ public final class TTActivity extends Activity {
 		return true;
 	}
 
-	private void initLocationRequest() {
-		final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		if (locationManager != null) {
-			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f,
-					new LocationListener() {
-						public void onLocationChanged(final Location location) {
-							if (LogBridge.isLoggable())
-								LogBridge.i("Location update recieved: " + location);
-							locationManager.removeUpdates(this);
-							if (!isAdinitialized) {
-								isAdinitialized = true;
-								myLocation = location;
-								myHandler.post(new Runnable() {
-									public void run() {
-										initAdView();
-									}
-								});
-							}
-						}
-
-						public void onStatusChanged(String provider, int status, Bundle extras) {
-						}
-
-						public void onProviderEnabled(String provider) {
-						}
-
-						public void onProviderDisabled(String provider) {
-						}
-					});
-		}
-	}
+//	private void initLocationRequest() {
+//		final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+//		if (locationManager != null) {
+//			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f,
+//					new LocationListener() {
+//						public void onLocationChanged(final Location location) {
+//							if (LogBridge.isLoggable())
+//								LogBridge.i("Location update recieved: " + location);
+//							locationManager.removeUpdates(this);
+//							if (!isAdinitialized) {
+//								isAdinitialized = true;
+//								myLocation = location;
+//								myHandler.post(new Runnable() {
+//									public void run() {
+//										initAdView();
+//									}
+//								});
+//							}
+//						}
+//
+//						public void onStatusChanged(String provider, int status, Bundle extras) {
+//						}
+//
+//						public void onProviderEnabled(String provider) {
+//						}
+//
+//						public void onProviderDisabled(String provider) {
+//						}
+//					});
+//		}
+//	}
 
 	private void initGraphics() {
 		// requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -439,14 +444,14 @@ public final class TTActivity extends Activity {
 		});
 	}
 
-	private void initAdView() {
-		if (LogBridge.isLoggable())
-			LogBridge.i("Initializing AdView : " + myLocation);
-		AdView adView = (AdView) findViewById(R.id.ad);
-		AdRequest adRequest = new AdRequest();
-		adRequest.setLocation(myLocation);
-		adView.loadAd(adRequest);
-	}
+//	private void initAdView() {
+//		if (LogBridge.isLoggable())
+//			LogBridge.i("Initializing AdView : " + myLocation);
+//		AdView adView = (AdView) findViewById(R.id.ad);
+//		AdRequest adRequest = new AdRequest();
+//		adRequest.setLocation(myLocation);
+//		adView.loadAd(adRequest);
+//	}
 
 	private void loadPreferences() {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
