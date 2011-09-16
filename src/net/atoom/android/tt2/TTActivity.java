@@ -84,7 +84,6 @@ public final class TTActivity extends Activity {
 	private Button myPrevPageButton;
 	private Button myPrevSubPageButton;
 
-	private String myStartPageUrl;
 	private String myHomePageUrl;
 	private String myTemplate;
 	private PageEntity myCurrentPageEntity;
@@ -119,7 +118,7 @@ public final class TTActivity extends Activity {
 		initMainWebViewAnimator();
 		initLocationRequest();
 
-		loadPageUrl(myStartPageUrl, true);
+		loadPageUrl(myHomePageUrl, true);
 
 		myHandler.postDelayed(new Runnable() {
 			public void run() {
@@ -450,6 +449,9 @@ public final class TTActivity extends Activity {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
 		if (settings != null) {
 			myHomePageUrl = settings.getString(PREFS_HOMEPAGE_URL, CONTENT_STARTPAGEURL);
+		}
+		if(myHomePageUrl == null || "".equals(myHomePageUrl)) {
+			myHomePageUrl = CONTENT_STARTPAGEURL;
 		}
 	}
 
