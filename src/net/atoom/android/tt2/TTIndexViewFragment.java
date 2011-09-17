@@ -1,14 +1,8 @@
 package net.atoom.android.tt2;
 
-import java.util.StringTokenizer;
-
-import net.atoom.android.tt2.util.LogBridge;
 import android.app.Fragment;
 import android.content.ClipData;
-import android.content.ClipDescription;
-import android.content.ClipData.Item;
 import android.os.Bundle;
-import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,8 +19,8 @@ public class TTIndexViewFragment extends Fragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		
 		final LinearLayout view = (LinearLayout) inflater.inflate(R.layout.fragment_index, container, false);
-
 		view.addView(createButton("Journaal", "http://teletekst.nos.nl/tekst/101-01.html"));
 		view.addView(createButton("Binnenland", "http://teletekst.nos.nl/tekst/102-01.html"));
 		view.addView(createButton("Buitenland", "http://teletekst.nos.nl/tekst/103-01.html"));
@@ -44,8 +38,8 @@ public class TTIndexViewFragment extends Fragment {
 		button.setWidth(400);
 		button.setMaxWidth(400);
 		button.setText(title);
-		button.setOnClickListener(new OnClickListener() {
 
+		button.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
 				TTMainViewFragment mainfragment = (TTMainViewFragment) getActivity().getFragmentManager()
@@ -55,66 +49,13 @@ public class TTIndexViewFragment extends Fragment {
 			}
 		});
 
-//		button.setOnLongClickListener(new OnLongClickListener() {
-//
-//			@Override
-//			public boolean onLongClick(View arg0) {
-//				ClipData data = ClipData.newPlainText("hello", "world");
-//				arg0.startDrag(data, new View.DragShadowBuilder(arg0), null, 0);
-//
-//				return true;
-//			}
-//		});
-//
-//		button.setOnDragListener(new OnDragListener() {
-//			public boolean onDrag(View v, DragEvent event) {
-//				if (event.getAction() == DragEvent.ACTION_DRAG_STARTED)
-//					return processDragStared(event);
-//				else if (event.getAction() == DragEvent.ACTION_DROP)
-//					return processDrop(event, button);
-//
-//				return false;
-//			}
-//		});
-		return button;
-	}
-
-	protected boolean processDrop(DragEvent event, Button lv) {
-		ClipData data = event.getClipData();
-		if (data != null) {
-			if (data.getItemCount() > 0) {
-				Item item = data.getItemAt(0);
-				String textData = (String) item.getText();
-				if (textData != null) {
-					StringTokenizer tokenizer = new StringTokenizer(textData, "||");
-					if (tokenizer.countTokens() != 2) {
-						return false;
-					}
-					int category = -1;
-					int entryId = -1;
-					try {
-						category = Integer.parseInt(tokenizer.nextToken());
-						entryId = Integer.parseInt(tokenizer.nextToken());
-					} catch (NumberFormatException exception) {
-						return false;
-					}
-
-					LogBridge.i("I got a drop baaaaaaaaaaaaaaaaaa!");
-					return true;
-
-				}
+		button.setOnLongClickListener(new View.OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View v) {
+				v.startDrag(ClipData.newPlainText("url", url), new View.DragShadowBuilder(v), null, 0);
+				return true;
 			}
-		}
-
-		return false;
-	}
-
-	protected boolean processDragStared(DragEvent event) {
-		// TODO Auto-generated method stub
-		ClipDescription clipDesc = event.getClipDescription();
-		if (clipDesc != null) {
-			return clipDesc.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
-		}
-		return false;
+		});
+		return button;
 	}
 }
