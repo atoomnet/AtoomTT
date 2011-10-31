@@ -13,8 +13,8 @@
 	<string name="dialog_about_title">About</string>
 	<string name="dialog_about_message">Atoom TeleTEXT</string>
 	<string name="dialog_about_ok">Ok</string>
-	<string name="dialog_about_text"> Follow links by tapping screen\nNavigate using flings or buttons\nSelect pagenr through
-		(soft)keyboard\nSet homepage through menu\nPages auto refresh every minute\n\nMore info and
-		feedback:\nhttp://code.google.com/p/atoom-android
+	<string name="dialog_about_text"> Follow links by tapping screen\nNavigate using flings or buttons\nSelect page through
+		keyboard\nSet homepage through menu\nPages auto refresh every minute\n\nMore info, code and
+		feedback:\nhttps://github.com/atoomnet/AtoomTT
 	</string>
 </resources>

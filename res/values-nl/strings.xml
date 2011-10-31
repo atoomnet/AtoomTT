@@ -13,8 +13,8 @@
 	<string name="dialog_about_title">Informatie</string>
 	<string name="dialog_about_message">Atoom TeleTEKST</string>
 	<string name="dialog_about_ok">Sluiten</string>
-	<string name="dialog_about_text"> Selecteer links op het scherm\nNavigeer via scherm of buttons\nSelecteer paginanr dmv
-		(soft)keyboard\nStel startpagina in via menu\nPaginas verversen elke minuut\n\nVoor meer informatie en feedback
-		zie:\nhttp://code.google.com/p/atoom-android
+	<string name="dialog_about_text"> Selecteer links op het scherm\nNavigeer via scherm of buttons\nSelecteer pagina via
+		keyboard\nStel startpagina in via menu\nPaginas verversen elke minuut\n\nVoor meer informatie, code en verzoekjes
+		zie:\nhttps://github.com/atoomnet/AtoomTT
 	</string>
 </resources>
