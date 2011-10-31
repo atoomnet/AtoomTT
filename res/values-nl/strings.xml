@@ -5,7 +5,8 @@
 	<string name="main_title">NOS TeleTEKST</string>
 	<string name="menu_about">Informatie</string>
 	<string name="menu_close">Sluiten</string>
-	<string name="menu_sethomepage">Zet startpagina</string>
+	<string name="menu_homepage">Startpagina</string>
+	<string name="menu_refresh">Herladen</string>
 	<string name="toast_pagenotfound">Pagina kan niet geladen worden</string>
 	<string name="toast_pagereload">Pagina wordt ververst</string>
 	<string name="toast_homepageset">Startpagina ingesteld</string>

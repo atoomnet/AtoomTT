@@ -65,6 +65,7 @@ public final class TTActivity extends Activity {
 	private static final int MENU_ABOUT = 1;
 	private static final int MENU_SETHOME = 2;
 	private static final int MENU_CLOSE = 3;
+	private static final int MENU_REFRESH = 4;
 
 	private static final int HISTORY_SIZE = 50;
 	private static final long RELOAD_INTERVAL_MS = 60000;
@@ -145,17 +146,15 @@ public final class TTActivity extends Activity {
 	}
 
 	@Override
-	public void onConfigurationChanged(Configuration config) {
-		// Do nothing, this is to prevent the activity from being restarted when
-		// the keyboard opens.
-		super.onConfigurationChanged(config);
-	}
-
-	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, MENU_SETHOME, 0, R.string.menu_sethomepage);
+		menu.add(0, MENU_SETHOME, 0, R.string.menu_homepage);
 		menu.add(0, MENU_ABOUT, 1, R.string.menu_about);
 		menu.add(0, MENU_CLOSE, 2, R.string.menu_close);
+		menu.add(0, MENU_REFRESH, 3, R.string.menu_refresh);
+		menu.getItem(0).setIcon(R.drawable.ic_menu_star);
+		menu.getItem(1).setIcon(R.drawable.ic_menu_help);
+		menu.getItem(2).setIcon(R.drawable.ic_menu_close_clear_cancel);
+		menu.getItem(3).setIcon(R.drawable.ic_menu_refresh);
 		return true;
 	}
 
@@ -166,6 +165,9 @@ public final class TTActivity extends Activity {
 			return handleAboutDialog();
 		case MENU_SETHOME:
 			return handleSetHomePage();
+		case MENU_REFRESH:
+			reloadPageUrl(myPageLoadCount);
+			return true;
 		case MENU_CLOSE:
 			isStopped = true;
 			storePreferences();

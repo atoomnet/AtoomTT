@@ -25,7 +25,7 @@ import net.atoom.android.tt2.util.LogBridge;
 public final class PageLoader {
 
 	private final static int CACHE_SIZE = 100;
-	private final static long CACHE_TIME = 59000;
+	private final static long CACHE_TIME = 30000;
 
 	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(CACHE_SIZE);
 	private final HttpConnection myHttpConnection;

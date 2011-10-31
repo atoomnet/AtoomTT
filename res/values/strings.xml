@@ -5,7 +5,8 @@
 	<string name="main_title">NOS TeleTEXT</string>
 	<string name="menu_about">About</string>
 	<string name="menu_close">Close</string>
-	<string name="menu_sethomepage">Set homepage</string>
+	<string name="menu_homepage">Homepage</string>
+	<string name="menu_refresh">Refresh</string>
 	<string name="toast_pagenotfound">Unable to load page :(</string>
 	<string name="toast_pagereload">Reloading page...</string>
 	<string name="toast_homepageset">Homepage set!</string>
