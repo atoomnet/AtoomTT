@@ -263,8 +263,7 @@ public final class TTActivity extends Activity {
 
 	private boolean handleAboutDialog() {
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
-		alert.setTitle(getResources().getText(R.string.dialog_about_title));
-		alert.setMessage(getResources().getText(R.string.dialog_about_message));
+		alert.setTitle(getResources().getText(R.string.dialog_about_message));
 		TextView view = new TextView(this);
 		view.setText(getResources().getText(R.string.dialog_about_text));
 		alert.setView(view);
