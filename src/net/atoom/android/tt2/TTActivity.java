@@ -27,7 +27,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -153,7 +152,7 @@ public final class TTActivity extends Activity {
 		menu.add(0, MENU_REFRESH, 3, R.string.menu_refresh);
 		menu.getItem(0).setIcon(R.drawable.ic_menu_star);
 		menu.getItem(1).setIcon(R.drawable.ic_menu_help);
-		menu.getItem(2).setIcon(R.drawable.ic_menu_close_clear_cancel);
+		menu.getItem(2).setIcon(R.drawable.ic_menu_close);
 		menu.getItem(3).setIcon(R.drawable.ic_menu_refresh);
 		return true;
 	}
