@@ -69,6 +69,9 @@ public final class PageProcessor {
 				LogBridge.w("Newspagedata not found");
 		}
 
+		// make blue readable on black background
+		newspageData = newspageData.replaceAll("color=blue",  "color=\"#0066CC\"");
+		
 		return CONTENT_PRE_START + newspageData + CONTENT_PRE_END + fastTekstData;
 	}
 
