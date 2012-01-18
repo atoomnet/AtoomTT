@@ -20,6 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import net.atoom.android.tt2.BillingService.RequestPurchase;
+import net.atoom.android.tt2.BillingService.RestoreTransactions;
+import net.atoom.android.tt2.Consts.PurchaseState;
+import net.atoom.android.tt2.Consts.ResponseCode;
 import net.atoom.android.tt2.util.BoundStack;
 import net.atoom.android.tt2.util.LogBridge;
 import android.app.Activity;
@@ -57,6 +61,8 @@ public final class TTActivity extends Activity {
 	private static final String CONTENT_STARTPAGEURL = "http://teletekst.nos.nl/tekst/101-01.html";
 
 	private static final String PREFS_HOMEPAGE_URL = "homepageUrl";
+	private static final String PREFS_TX_RESTORED = "txRestored";
+	private static final String PREFS_ADS_ENABLED = "adsEnabled";
 
 	private static final String TEMPLATE_FILENAME = "template.html";
 	private static final String TEMPLATE_PLACEHOLDER = "[pageContent]";
@@ -70,35 +76,38 @@ public final class TTActivity extends Activity {
 	private static final long RELOAD_INTERVAL_MS = 60000;
 	private static final long AD_INIT_DELAY_MS = 3000;
 
-	private final PageLoader myPageLoader;
-	private final Handler myHandler;
-	private final BoundStack<PageEntity> myHistoryStack;
-
-	private MainWebViewAnimator myMainWebViewAnimator;
-	private EditText myPageEditText;
-
-	private Button myHomeButton;
-	private Button myNextPageButton;
-	private Button myNextSubPageButton;
-	private Button myPrevPageButton;
-	private Button myPrevSubPageButton;
-
-	private String myHomePageUrl;
-	private String myTemplate;
+	// app
+	private final PageLoader myPageLoader = new PageLoader();
+	private final Handler myHandler = new Handler();
+	private final BoundStack<PageEntity> myHistoryStack = new BoundStack<PageEntity>(HISTORY_SIZE);
+	private String myHomePageUrl = CONTENT_STARTPAGEURL;
 	private PageEntity myCurrentPageEntity;
+	private String myTemplate;
 	private int myPageLoadCount = 0;
-
-	private volatile Location myLocation = null;
-	private volatile boolean isAdinitialized = false;
 	private volatile boolean isStopped = false;
 
-	public TTActivity() {
-		myHandler = new Handler();
-		myPageLoader = new PageLoader();
-		myHistoryStack = new BoundStack<PageEntity>(HISTORY_SIZE);
+	// ui
+	private MainWebViewAnimator myMainWebViewAnimator = null;
+	private EditText myPageEditText;
+	private Button myHomeButton = null;
+	private Button myNextPageButton = null;
+	private Button myNextSubPageButton = null;
+	private Button myPrevPageButton = null;
+	private Button myPrevSubPageButton = null;
 
-		// default location in NL
-		myLocation = new Location("AtoomTT");
+	// location
+	private LocationListener myLocationListener = null;
+	private boolean myAdsEnabled = true;
+	private volatile Location myLocation = null;
+
+	// vending
+	private BillingService myBillingService = null;
+	private TTPurchaseObserver myPurchaseObserver = null;
+	private boolean myVendingSupported = true;
+	private boolean myTxRestored = false;
+
+	public TTActivity() {
+		myLocation = new Location(LOGGING_TAG);
 		myLocation.setLatitude(52.4498d);
 		myLocation.setLongitude(4.8223d);
 		myLocation.setTime(System.currentTimeMillis());
@@ -114,30 +123,39 @@ public final class TTActivity extends Activity {
 		initGraphics();
 		initEditText();
 		initButtons();
-		initMainWebViewAnimator();
-		initLocationRequest();
+		initWebView();
 
+		initVending();
+		initLocationTracking();
+		initAdvertising();
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		isStopped = false;
+		ResponseHandler.register(myPurchaseObserver);
 		loadPageUrl(myHomePageUrl, true);
-
-		myHandler.postDelayed(new Runnable() {
-			public void run() {
-				if (!isAdinitialized) {
-					isAdinitialized = true;
-					initAdView();
-				}
-			}
-		}, AD_INIT_DELAY_MS);
 	}
 
 	@Override
 	protected void onStop() {
 		isStopped = true;
+		ResponseHandler.unregister(myPurchaseObserver);
 		super.onStop();
-		storePreferences();
+	}
+
+	@Override
+	protected void onDestroy() {
+		myBillingService.unbind();
+		destroyLocationTracking();
+		super.onDestroy();
 	}
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (isStopped)
+			return false;
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 			return handleBackButton();
 		}
@@ -146,6 +164,8 @@ public final class TTActivity extends Activity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
+		if (isStopped)
+			return false;
 		menu.add(0, MENU_SETHOME, 0, R.string.menu_homepage);
 		menu.add(0, MENU_ABOUT, 1, R.string.menu_about);
 		menu.add(0, MENU_CLOSE, 2, R.string.menu_close);
@@ -159,6 +179,8 @@ public final class TTActivity extends Activity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+		if (isStopped)
+			return false;
 		switch (item.getItemId()) {
 		case MENU_ABOUT:
 			return handleAboutDialog();
@@ -168,14 +190,14 @@ public final class TTActivity extends Activity {
 			reloadPageUrl(myPageLoadCount);
 			return true;
 		case MENU_CLOSE:
-			isStopped = true;
-			storePreferences();
 			finish();
 		}
 		return false;
 	}
 
 	public synchronized void loadPageUrl(final String pageUrl, final boolean updateHistory) {
+		if (isStopped)
+			return;
 
 		myPageLoadCount++; // cancels previous reloads
 
@@ -223,6 +245,8 @@ public final class TTActivity extends Activity {
 	}
 
 	public synchronized void reloadPageUrl(final int pageLoadCount) {
+		if (isStopped)
+			return;
 		PageEntity pageEntity = myCurrentPageEntity;
 		if (myPageLoadCount == pageLoadCount && !isStopped && pageEntity != null) {
 			if (LogBridge.isLoggable())
@@ -236,6 +260,8 @@ public final class TTActivity extends Activity {
 	}
 
 	public synchronized void loadNextPage() {
+		if (isStopped)
+			return;
 		PageEntity pageEntity = myCurrentPageEntity;
 		if (pageEntity != null) {
 			if (pageEntity.getNextSubPageUrl() != null) {
@@ -249,6 +275,8 @@ public final class TTActivity extends Activity {
 	}
 
 	public synchronized void loadPrevPage() {
+		if (isStopped)
+			return;
 		PageEntity pageEntity = myCurrentPageEntity;
 		if (pageEntity != null) {
 			if (pageEntity.getPrevSubPageUrl() != null) {
@@ -280,8 +308,6 @@ public final class TTActivity extends Activity {
 		if (myHistoryStack.size() > 0) {
 			loadPageUrl(myHistoryStack.pop().getPageUrl(), false);
 		} else {
-			isStopped = true;
-			storePreferences();
 			finish();
 		}
 		return true;
@@ -289,43 +315,78 @@ public final class TTActivity extends Activity {
 
 	private boolean handleSetHomePage() {
 		myHomePageUrl = myCurrentPageEntity.getPageUrl();
+		storePreferences();
 		Toast.makeText(getApplicationContext(), R.string.toast_homepageset, Toast.LENGTH_SHORT).show();
 		return true;
 	}
 
-	private void initLocationRequest() {
-		final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		if (locationManager != null) {
-			locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f,
-					new LocationListener() {
-						public void onLocationChanged(final Location location) {
-							if (LogBridge.isLoggable())
-								LogBridge.i("Location update recieved: " + location);
-							locationManager.removeUpdates(this);
-							if (!isAdinitialized) {
-								isAdinitialized = true;
-								myLocation = location;
-								myHandler.post(new Runnable() {
-									public void run() {
-										initAdView();
-									}
-								});
-							}
-						}
-
-						public void onStatusChanged(String provider, int status, Bundle extras) {
-						}
-
-						public void onProviderEnabled(String provider) {
-						}
-
-						public void onProviderDisabled(String provider) {
-						}
-					});
+	private void initAdvertising() {
+		if (!myAdsEnabled) {
+			hideAdView();
+		} else {
+			myHandler.postDelayed(new Runnable() {
+				public void run() {
+					initAdView();
+				}
+			}, AD_INIT_DELAY_MS);
 		}
 	}
 
+	private void initVending() {
+		myPurchaseObserver = new TTPurchaseObserver(this, myHandler);
+		myBillingService = new BillingService();
+		myBillingService.setContext(this);
+		ResponseHandler.register(myPurchaseObserver);
+		if (!myBillingService.checkBillingSupported()) {
+			myVendingSupported = false;
+		} else {
+			if (!myTxRestored) {
+				myBillingService.restoreTransactions();
+			}
+		}
+	}
+
+	private void initLocationTracking() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing locationlistener");
+		final LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		if (manager == null)
+			return;
+		myLocationListener = new LocationListener() {
+			public void onLocationChanged(final Location location) {
+				if (LogBridge.isLoggable())
+					LogBridge.i("Location update recieved: " + location);
+				myLocation = location;
+			}
+
+			public void onStatusChanged(String provider, int status, Bundle extras) {
+			}
+
+			public void onProviderEnabled(String provider) {
+			}
+
+			public void onProviderDisabled(String provider) {
+			}
+		};
+		manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f, myLocationListener);
+	}
+
+	private void destroyLocationTracking() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Destroying locationlistener");
+		LocationListener locationListener = myLocationListener;
+		myLocationListener = null;
+		if (locationListener == null)
+			return;
+		LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		if (manager == null)
+			return;
+		manager.removeUpdates(locationListener);
+	}
+
 	private void initGraphics() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing graphics");
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		getWindow().setTitle(getResources().getText(R.string.main_title));
@@ -333,47 +394,91 @@ public final class TTActivity extends Activity {
 		setContentView(R.layout.main);
 	}
 
-	private void initMainWebViewAnimator() {
+	private void initWebView() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing webview");
 		myMainWebViewAnimator = new MainWebViewAnimator(this);
 		FrameLayout frameLayout = (FrameLayout) findViewById(R.id.webview);
 		frameLayout.addView(myMainWebViewAnimator);
 	}
 
 	private void initEditText() {
-
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing edittext");
 		myPageEditText = (EditText) findViewById(R.id.gotopageview);
 		myPageEditText.setSelectAllOnFocus(true);
 		myPageEditText.addTextChangedListener(new TextWatcher() {
 
 			public void afterTextChanged(Editable s) {
-				if (myPageEditText.getText().length() == 3) {
+				if (myPageEditText.getText().length() != 3)
+					return;
 
-					String newPageId = myPageEditText.getText() + "";
-					String currentPageId = "";
-					PageEntity pageEntity = myCurrentPageEntity;
-					if (pageEntity != null && pageEntity.getPageId() != null) {
-						currentPageId = pageEntity.getPageId();
-						if (currentPageId.length() == 6) {
-							currentPageId = currentPageId.substring(0, 3);
-						}
-					}
-
-					if (currentPageId.equals(newPageId)) {
-						if (LogBridge.isLoggable())
-							LogBridge.i("Ignoring newPageId " + newPageId + " to prevent recursion");
-					} else {
-						String newPageUrl = "http://teletekst.nos.nl/tekst/" + newPageId + "-01.html";
-						loadPageUrl(newPageUrl, true);
-						myPageEditText.clearFocus();
-
-						// close soft keyboard
-						InputMethodManager inputManager = (InputMethodManager) TTActivity.this
-								.getSystemService(Context.INPUT_METHOD_SERVICE);
-						inputManager.hideSoftInputFromWindow(myPageEditText.getWindowToken(),
-								InputMethodManager.HIDE_NOT_ALWAYS);
-
+				String newPageId = myPageEditText.getText() + "";
+				String currentPageId = "";
+				PageEntity pageEntity = myCurrentPageEntity;
+				if (pageEntity != null && pageEntity.getPageId() != null) {
+					currentPageId = pageEntity.getPageId();
+					if (currentPageId.length() == 6) {
+						currentPageId = currentPageId.substring(0, 3);
 					}
 				}
+
+				if (newPageId.equals("050")) {
+					myAdsEnabled = true;
+					myTxRestored = false;
+					storePreferences();
+					initAdView();
+					newPageId = currentPageId;
+				}
+				if (newPageId.equals("051")) {
+					myAdsEnabled = false;
+					myTxRestored = true;
+					storePreferences();
+					hideAdView();
+					newPageId = currentPageId;
+				}
+				if (newPageId.equals("052")) {
+					myAdsEnabled = true;
+					myTxRestored = true;
+					storePreferences();
+					initAdView();
+					newPageId = currentPageId;
+				}
+				if (newPageId.equals("053")) {
+					if (!myBillingService.requestPurchase("android.test.purchased", null)) {
+					}
+					newPageId = currentPageId;
+				}
+				if (newPageId.equals("054")) {
+					if (!myBillingService.requestPurchase("android.test.canceled", null)) {
+					}
+					newPageId = currentPageId;
+				}
+				if (newPageId.equals("055")) {
+					if (!myBillingService.requestPurchase("android.test.refunded", null)) {
+					}
+					newPageId = currentPageId;
+				}
+				if (newPageId.equals("056")) {
+					if (!myBillingService.requestPurchase("net.atoom.android.tt2.noads", null)) {
+					}
+					newPageId = currentPageId;
+				}
+
+				if (currentPageId.equals(newPageId)) {
+					if (LogBridge.isLoggable())
+						LogBridge.i("Ignoring newPageId " + newPageId + " to prevent recursion");
+				} else {
+					String newPageUrl = "http://teletekst.nos.nl/tekst/" + newPageId + "-01.html";
+					loadPageUrl(newPageUrl, true);
+				}
+				myPageEditText.clearFocus();
+
+				// close soft keyboard
+				InputMethodManager inputManager = (InputMethodManager) TTActivity.this
+						.getSystemService(Context.INPUT_METHOD_SERVICE);
+				inputManager.hideSoftInputFromWindow(myPageEditText.getWindowToken(),
+						InputMethodManager.HIDE_NOT_ALWAYS);
 			}
 
 			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -386,14 +491,14 @@ public final class TTActivity extends Activity {
 	}
 
 	private void initButtons() {
-
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing buttons");
 		myHomeButton = (Button) findViewById(R.id.homebuttonview);
 		myHomeButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				loadPageUrl(myHomePageUrl, true);
 			}
 		});
-
 		myNextPageButton = (Button) findViewById(R.id.nextpagebuttonview);
 		myNextPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -402,7 +507,6 @@ public final class TTActivity extends Activity {
 					loadPageUrl(pageEntity.getNextPageUrl(), true);
 			}
 		});
-
 		myNextSubPageButton = (Button) findViewById(R.id.nextsubbuttonview);
 		myNextSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -411,7 +515,6 @@ public final class TTActivity extends Activity {
 					loadPageUrl(pageEntity.getNextSubPageUrl(), true);
 			}
 		});
-
 		myPrevPageButton = (Button) findViewById(R.id.prevpagebuttonview);
 		myPrevPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -420,7 +523,6 @@ public final class TTActivity extends Activity {
 					loadPageUrl(pageEntity.getPrevPageUrl(), true);
 			}
 		});
-
 		myPrevSubPageButton = (Button) findViewById(R.id.prevsubbuttonview);
 		myPrevSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -433,20 +535,63 @@ public final class TTActivity extends Activity {
 
 	private void initAdView() {
 		if (LogBridge.isLoggable())
-			LogBridge.i("Initializing AdView : " + myLocation);
-		AdView adView = (AdView) findViewById(R.id.ad);
-		AdRequest adRequest = new AdRequest();
-		adRequest.setLocation(myLocation);
-		adView.loadAd(adRequest);
+			LogBridge.i("Initializing adview");
+		myHandler.post(new Runnable() {
+			@Override
+			public void run() {
+				if (LogBridge.isLoggable())
+					LogBridge.i("Initializing AdView : " + myLocation);
+				AdView adView = (AdView) findViewById(R.id.ad);
+				AdRequest adRequest = new AdRequest();
+				adRequest.setLocation(myLocation);
+				adView.loadAd(adRequest);
+				adView.setVisibility(View.VISIBLE);
+			}
+		});
+	}
+
+	private void hideAdView() {
+		myHandler.post(new Runnable() {
+			@Override
+			public void run() {
+				if (LogBridge.isLoggable())
+					LogBridge.i("Hiding AdView : " + myLocation);
+				AdView adView = (AdView) findViewById(R.id.ad);
+				adView.stopLoading();
+				adView.setVisibility(View.GONE);
+			}
+		});
 	}
 
 	private void loadPreferences() {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
 		if (settings != null) {
 			myHomePageUrl = settings.getString(PREFS_HOMEPAGE_URL, CONTENT_STARTPAGEURL);
+			myAdsEnabled = settings.getBoolean(PREFS_ADS_ENABLED, true);
+			myTxRestored = settings.getBoolean(PREFS_TX_RESTORED, false);
+			if (LogBridge.isLoggable()) {
+				LogBridge.i("Loaded preference: " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
+				LogBridge.i("Loaded preference: " + PREFS_ADS_ENABLED + "=" + myAdsEnabled);
+				LogBridge.i("Loaded preference: " + PREFS_TX_RESTORED + "=" + myTxRestored);
+			}
 		}
-		if(myHomePageUrl == null || "".equals(myHomePageUrl)) {
-			myHomePageUrl = CONTENT_STARTPAGEURL;
+	}
+
+	private void storePreferences() {
+		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
+		if (settings != null) {
+			SharedPreferences.Editor editor = settings.edit();
+			if (editor != null) {
+				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
+				editor.putBoolean(PREFS_ADS_ENABLED, myAdsEnabled);
+				editor.putBoolean(PREFS_TX_RESTORED, myTxRestored);
+				editor.commit();
+			}
+			if (LogBridge.isLoggable()) {
+				LogBridge.i("Stored preference: " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
+				LogBridge.i("Stored preference: " + PREFS_ADS_ENABLED + "=" + myAdsEnabled);
+				LogBridge.i("Stored preference: " + PREFS_TX_RESTORED + "=" + myTxRestored);
+			}
 		}
 	}
 
@@ -471,17 +616,6 @@ public final class TTActivity extends Activity {
 					} catch (IOException e1) {
 					}
 				}
-			}
-		}
-	}
-
-	private void storePreferences() {
-		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
-		if (settings != null) {
-			SharedPreferences.Editor editor = settings.edit();
-			if (editor != null) {
-				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
-				editor.commit();
 			}
 		}
 	}
@@ -526,5 +660,74 @@ public final class TTActivity extends Activity {
 	private void disableButton(final Button button) {
 		button.setEnabled(false);
 		button.setFocusable(false);
+	}
+
+	private void enableAds() {
+		myAdsEnabled = true;
+		storePreferences();
+		initAdView();
+	}
+
+	private void disableAds() {
+		myAdsEnabled = false;
+		storePreferences();
+		hideAdView();
+	}
+
+	private class TTPurchaseObserver extends PurchaseObserver {
+
+		public TTPurchaseObserver(Activity activity, Handler handler) {
+			super(activity, handler);
+		}
+
+		@Override
+		public void onBillingSupported(boolean supported) {
+			myVendingSupported = supported;
+			if (LogBridge.isLoggable())
+				LogBridge.w("Billing supported : " + supported);
+		}
+
+		@Override
+		public void onPurchaseStateChange(PurchaseState purchaseState, String itemId, int quantity, long purchaseTime,
+				String developerPayload) {
+			if (LogBridge.isLoggable())
+				LogBridge.w("onPurchaseStateChange() itemId: " + itemId + " " + purchaseState);
+			if (purchaseState == PurchaseState.PURCHASED) {
+				Toast.makeText(TTActivity.this, "Purchase success... thank you!", Toast.LENGTH_LONG).show();
+				disableAds();
+			} else if (purchaseState == PurchaseState.REFUNDED) {
+				Toast.makeText(TTActivity.this, "Purchase refunded... ads are back", Toast.LENGTH_LONG).show();
+				enableAds();
+			} else if (purchaseState == PurchaseState.CANCELED) {
+				Toast.makeText(TTActivity.this, "Purchase cancelled", Toast.LENGTH_LONG).show();
+			}
+		}
+
+		@Override
+		public void onRequestPurchaseResponse(RequestPurchase request, ResponseCode responseCode) {
+			if (responseCode == ResponseCode.RESULT_OK) {
+				if (LogBridge.isLoggable())
+					LogBridge.w("Purchase successfull (" + request.mProductId + ")");
+			} else if (responseCode == ResponseCode.RESULT_USER_CANCELED) {
+				if (LogBridge.isLoggable())
+					LogBridge.w("Purchase canceled (" + request.mProductId + ")");
+			} else {
+				if (LogBridge.isLoggable())
+					LogBridge.w("Purchase failed (" + request.mProductId + ")");
+			}
+		}
+
+		@Override
+		public void onRestoreTransactionsResponse(RestoreTransactions request, ResponseCode responseCode) {
+			if (responseCode == ResponseCode.RESULT_OK) {
+				if (LogBridge.isLoggable())
+					LogBridge.i("Transactions restored: " + responseCode);
+				myTxRestored = true;
+				storePreferences();
+			} else {
+				if (LogBridge.isLoggable())
+					LogBridge.w("Transactions error: " + responseCode);
+			}
+		}
 	}
 }
