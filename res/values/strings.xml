@@ -10,11 +10,24 @@
 	<string name="toast_pagenotfound">Unable to load page :(</string>
 	<string name="toast_pagereload">Reloading page...</string>
 	<string name="toast_homepageset">Homepage set!</string>
-	<string name="dialog_about_title">About</string>
-	<string name="dialog_about_message">Atoom TeleTEXT</string>
-	<string name="dialog_about_ok">Ok</string>
-	<string name="dialog_about_text"> Follow links by tapping screen\nNavigate using flings or buttons\nSelect page through
-		keyboard\nSet homepage through menu\nPages auto refresh every minute\n\nMore info, code and
-		feedback:\nhttps://github.com/atoomnet/AtoomTT
+	<string name="dialog_title">Atoom TeleTEXT</string>
+	<string name="dialog_about_ok">Back</string>
+	<string name="dialog_about_donate">Donate</string>
+	<string name="dialog_about_text"> Atoom TeleTEXT is an unofficial retro style text based browser for the teletext service provided
+		by the Dutch Broadcasting Association (NOS)\n\nSupport this free app and remove all ads by making a €0.99
+		donation.\n\nMore info, code and feedback:\nhttps://github.com/atoomnet/AtoomTT
 	</string>
+	<string name="dialog_about_text_noads">Atoom TeleTEXT is an unofficial retro style text based browser for the teletext service provided
+		by the Dutch Broadcasting Association (NOS)\n\nMore info, code and feedback:\nhttps://github.com/atoomnet/AtoomTT
+	</string>
+	<string name="dialog_purchase_success">Thank you very much! Your donation was processed successfully. As a token of our appreciation we
+		will now remove all banners!\n\nWe hope you will continue to enjoy Atoom TeleTEXT!</string>
+	<string name="dialog_purchase_cancelled">Oops.. your donation was cancelled. Your account will not be charged. If you did not intend to
+		cancel something went wrong and you can try again in a little while.\n\nWe hope you will continue to enjoy Atoom
+		TeleTEXT!
+	</string>
+	<string name="dialog_purchase_refunded">We have refunded your donation. No worries and feel free to click a banner every now and then
+		;)\n\nWe hope you will continue to enjoy Atoom TeleTEXT!</string>
+	<string name="dialog_purchase_failed">Oops.. something went wrong. Your account will not be charged. Feel free to try again in a little
+		while.\n\nWe hope you will continue to enjoy Atoom TeleTEXT!</string>
 </resources>

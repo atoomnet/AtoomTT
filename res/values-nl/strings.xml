@@ -10,11 +10,22 @@
 	<string name="toast_pagenotfound">Pagina kan niet geladen worden</string>
 	<string name="toast_pagereload">Pagina wordt ververst</string>
 	<string name="toast_homepageset">Startpagina ingesteld</string>
-	<string name="dialog_about_title">Informatie</string>
-	<string name="dialog_about_message">Atoom TeleTEKST</string>
-	<string name="dialog_about_ok">Sluiten</string>
-	<string name="dialog_about_text"> Selecteer links op het scherm\nNavigeer via scherm of buttons\nSelecteer pagina via
-		keyboard\nStel startpagina in via menu\nPaginas verversen elke minuut\n\nVoor meer informatie, code en verzoekjes
-		zie:\nhttps://github.com/atoomnet/AtoomTT
+	<string name="dialog_title">Atoom TeleTEKST</string>
+	<string name="dialog_about_ok">Terug</string>
+	<string name="dialog_about_donate">Doneer</string>
+	<string name="dialog_about_text"> Atoom TeleTEKST is een onofficiele retro style tekst gebaseerde browser voor NOS
+		teletekst.\n\nSteun deze gratis app met slechts €0.99! Als dank halen zul je geen reclame banners meer zien.\n\nVoor
+		meer informatie, code en verzoekjes zie:\nhttps://github.com/atoomnet/AtoomTT
 	</string>
+	<string name="dialog_about_text_noads"> Atoom TeleTEKST is een onofficiele retro style tekst gebaseerde browser voor NOS
+		teletekst.\n\nVoor meer informatie, code en verzoekjes zie:\nhttps://github.com/atoomnet/AtoomTT
+	</string>
+	<string name="dialog_purchase_success">Hartelijk dank! We hebben je donatie ontvangen. Als dank zullen we je geen banners meer tonen!\n\n
+		We wensen je verder veel plezier met Atoom TeleTEXT!</string>
+	<string name="dialog_purchase_cancelled">Oeps.. je donatie is geannuleerd. Er zal niets worden afgeschreven. Als er iets mis is gegaan kun
+		je het later nog eens proberen.\n\nWe wensen je verder veel plezier met Atoom TeleTEXT!</string>
+	<string name="dialog_purchase_refunded">We hebben je donatie teruggestort. Vanaf nu zullen we je weer banners tonen.\n\nWe wensen je verder
+		veel plezier met Atoom TeleTEXT!</string>
+	<string name="dialog_purchase_failed">Oeps.. er iets is misgegaan tijdens het verwerken. Er zal niets worden afgeschreven. Je kunt het
+		later nog eens proberen.\n\nWe wensen je verder veel plezier met Atoom TeleTEXT!</string>
 </resources>

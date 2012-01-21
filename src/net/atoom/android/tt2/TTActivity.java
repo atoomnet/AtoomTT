@@ -79,6 +79,7 @@ public final class TTActivity extends Activity {
 	private static final int MENU_SETHOME = 2;
 	private static final int MENU_CLOSE = 3;
 	private static final int MENU_REFRESH = 4;
+	private static final int MENU_PURCHASE = 5;
 
 	private static final int HISTORY_SIZE = 50;
 	private static final long RELOAD_INTERVAL_MS = 60000;
@@ -93,6 +94,7 @@ public final class TTActivity extends Activity {
 	private String myTemplate;
 	private int myPageLoadCount = 0;
 	private volatile boolean isStopped = false;
+	private boolean myTestFlag = false;
 
 	// ui
 	private MainWebViewAnimator myMainWebViewAnimator = null;
@@ -177,13 +179,13 @@ public final class TTActivity extends Activity {
 		if (isStopped)
 			return false;
 		menu.add(0, MENU_SETHOME, 0, R.string.menu_homepage);
-		menu.add(0, MENU_ABOUT, 1, R.string.menu_about);
+		menu.add(0, MENU_REFRESH, 1, R.string.menu_refresh);
 		menu.add(0, MENU_CLOSE, 2, R.string.menu_close);
-		menu.add(0, MENU_REFRESH, 3, R.string.menu_refresh);
+		menu.add(0, MENU_ABOUT, 3, R.string.menu_about);
 		menu.getItem(0).setIcon(R.drawable.ic_menu_star);
-		menu.getItem(1).setIcon(R.drawable.ic_menu_help);
+		menu.getItem(1).setIcon(R.drawable.ic_menu_refresh);
 		menu.getItem(2).setIcon(R.drawable.ic_menu_close);
-		menu.getItem(3).setIcon(R.drawable.ic_menu_refresh);
+		menu.getItem(3).setIcon(R.drawable.ic_menu_info);
 		return true;
 	}
 
@@ -198,8 +200,10 @@ public final class TTActivity extends Activity {
 		case MENU_SETHOME:
 			return handleSetHomePage();
 		case MENU_REFRESH:
-			showDialog(DIALOG_PURCHASE_ID);
 			reloadPageUrl(myPageLoadCount);
+			return true;
+		case MENU_PURCHASE:
+			showDialog(DIALOG_PURCHASE_ID);
 			return true;
 		case MENU_CLOSE:
 			finish();
@@ -307,46 +311,38 @@ public final class TTActivity extends Activity {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		TextView view = new TextView(this);
 		view.setPadding(10, 10, 10, 10);
+		builder.setTitle(getResources().getText(R.string.dialog_title));
 		builder.setView(view);
 		switch (id) {
-		case DIALOG_PURCHASE_ID:
-			builder.setTitle(getResources().getText(R.string.dialog_about_message));
-			view.setText("Steun mij...");
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok),
-					new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-							myBillingService.requestPurchase("android.test.purchased", null);
-						}
-					});
-			builder.setNegativeButton("nee", null);
-			break;
 		case DIALOG_PURCHASE_SUCCES_ID:
-			builder.setTitle(getResources().getText(R.string.dialog_about_message));
-			view.setText("Bedankt! Banners zijn weg");
+			view.setText(getResources().getText(R.string.dialog_purchase_success));
 			builder.setView(view);
 			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		case DIALOG_PURCHASE_CANCEL_ID:
-			builder.setTitle(getResources().getText(R.string.dialog_about_message));
-			view.setText("Gestopt....");
+			view.setText(getResources().getText(R.string.dialog_purchase_cancelled));
 			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		case DIALOG_PURCHASE_REFUND_ID:
-			builder.setTitle(getResources().getText(R.string.dialog_about_message));
-			view.setText("Refunded");
-			builder.setView(view);
+			view.setText(getResources().getText(R.string.dialog_purchase_refunded));
 			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		case DIALOG_PURCHASE_FAIL_ID:
-			builder.setTitle(getResources().getText(R.string.dialog_about_message));
-			view.setText("Bedankt! Banners zijn weg");
-			builder.setView(view);
+			view.setText(getResources().getText(R.string.dialog_purchase_failed));
 			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		case DIALOG_ABOUT_ID:
-			builder.setTitle(getResources().getText(R.string.dialog_about_message));
-			view.setText(getResources().getText(R.string.dialog_about_text));
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
+			view.setText(getResources().getText(R.string.dialog_about_text_noads));
+			if (myBillingSupported && myAdsEnabled && myTestFlag) {
+				view.setText(getResources().getText(R.string.dialog_about_text));
+				builder.setPositiveButton(getResources().getText(R.string.dialog_about_donate),
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int whichButton) {
+								myBillingService.requestPurchase("net.atoom.android.tt2.noads", null);
+							}
+						});
+			}
+			builder.setNegativeButton(getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		}
 		return builder.create();
@@ -585,42 +581,39 @@ public final class TTActivity extends Activity {
 					}
 				}
 
+				// testcode
 				if (newPageId.equals("050")) {
+					myTestFlag = true;
+					Toast.makeText(TTActivity.this, "Testflag set", Toast.LENGTH_SHORT).show();
+					newPageId = currentPageId;
+					removeDialog(DIALOG_ABOUT_ID);
+				}
+				if (newPageId.equals("051")) {
 					myTxRestored = false;
 					storePreferences();
 					enableAdvertising();
 					newPageId = currentPageId;
 				}
-				if (newPageId.equals("051")) {
+				if (newPageId.equals("052")) {
 					myTxRestored = true;
 					storePreferences();
 					disableAdvertising();
 					newPageId = currentPageId;
 				}
-				if (newPageId.equals("052")) {
-					myTxRestored = true;
-					storePreferences();
-					enableAdvertising();
-					newPageId = currentPageId;
-				}
 				if (newPageId.equals("053")) {
-					if (!myBillingService.requestPurchase("android.test.purchased", null)) {
-					}
+					myBillingService.requestPurchase("android.test.purchased", null);
 					newPageId = currentPageId;
 				}
 				if (newPageId.equals("054")) {
-					if (!myBillingService.requestPurchase("android.test.canceled", null)) {
-					}
+					myBillingService.requestPurchase("android.test.canceled", null);
 					newPageId = currentPageId;
 				}
 				if (newPageId.equals("055")) {
-					if (!myBillingService.requestPurchase("android.test.refunded", null)) {
-					}
+					myBillingService.requestPurchase("android.test.refunded", null);
 					newPageId = currentPageId;
 				}
 				if (newPageId.equals("056")) {
-					if (!myBillingService.requestPurchase("net.atoom.android.tt2.noads", null)) {
-					}
+					myBillingService.requestPurchase("net.atoom.android.tt2.noads", null);
 					newPageId = currentPageId;
 				}
 
@@ -777,6 +770,7 @@ public final class TTActivity extends Activity {
 			} else if (purchaseState == PurchaseState.CANCELED) {
 				showDialog(DIALOG_PURCHASE_CANCEL_ID);
 			}
+			removeDialog(DIALOG_ABOUT_ID); // rm from cache
 		}
 
 		@Override
