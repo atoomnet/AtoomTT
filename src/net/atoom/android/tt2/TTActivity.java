@@ -20,18 +20,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import net.atoom.android.tt2.BillingService.RequestPurchase;
-import net.atoom.android.tt2.BillingService.RestoreTransactions;
-import net.atoom.android.tt2.Consts.PurchaseState;
-import net.atoom.android.tt2.Consts.ResponseCode;
 import net.atoom.android.tt2.util.BoundStack;
 import net.atoom.android.tt2.util.LogBridge;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -62,24 +60,16 @@ public final class TTActivity extends Activity {
 	private static final String CONTENT_STARTPAGEURL = "http://teletekst.nos.nl/tekst/101-01.html";
 
 	private static final String PREFS_HOMEPAGE_URL = "homepageUrl";
-	private static final String PREFS_TX_RESTORED = "txRestored";
-	private static final String PREFS_ADS_ENABLED = "adsEnabled";
 
 	private static final String TEMPLATE_FILENAME = "template.html";
 	private static final String TEMPLATE_PLACEHOLDER = "[pageContent]";
 
-	private static final int DIALOG_PURCHASE_ID = 0;
-	private static final int DIALOG_PURCHASE_SUCCES_ID = 1;
-	private static final int DIALOG_PURCHASE_CANCEL_ID = 2;
-	private static final int DIALOG_PURCHASE_REFUND_ID = 3;
-	private static final int DIALOG_PURCHASE_FAIL_ID = 4;
-	private static final int DIALOG_ABOUT_ID = 5;
+	private static final int DIALOG_ABOUT_ID = 0;
 
 	private static final int MENU_ABOUT = 1;
 	private static final int MENU_SETHOME = 2;
 	private static final int MENU_CLOSE = 3;
 	private static final int MENU_REFRESH = 4;
-	private static final int MENU_PURCHASE = 5;
 
 	private static final int HISTORY_SIZE = 50;
 	private static final long RELOAD_INTERVAL_MS = 60000;
@@ -94,7 +84,6 @@ public final class TTActivity extends Activity {
 	private String myTemplate;
 	private int myPageLoadCount = 0;
 	private volatile boolean isStopped = false;
-	private boolean myTestFlag = false;
 
 	// ui
 	private MainWebViewAnimator myMainWebViewAnimator = null;
@@ -109,12 +98,6 @@ public final class TTActivity extends Activity {
 	private LocationListener myLocationListener = null;
 	private boolean myAdsEnabled = true;
 	private volatile Location myLocation = null;
-
-	// vending
-	private BillingService myBillingService = null;
-	private TTPurchaseObserver myPurchaseObserver = null;
-	private boolean myBillingSupported = true;
-	private boolean myTxRestored = false;
 
 	public TTActivity() {
 		myLocation = new Location(LOGGING_TAG);
@@ -136,7 +119,6 @@ public final class TTActivity extends Activity {
 		initButtons();
 		initWebView();
 
-		initVending();
 		initLocationTracking();
 		initAdvertising();
 	}
@@ -145,20 +127,17 @@ public final class TTActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		isStopped = false;
-		ResponseHandler.register(myPurchaseObserver);
 		loadPageUrl(myHomePageUrl, true);
 	}
 
 	@Override
 	protected void onStop() {
 		isStopped = true;
-		ResponseHandler.unregister(myPurchaseObserver);
 		super.onStop();
 	}
 
 	@Override
 	protected void onDestroy() {
-		myBillingService.unbind();
 		destroyLocationTracking();
 		destroyAdView();
 		super.onDestroy();
@@ -201,9 +180,6 @@ public final class TTActivity extends Activity {
 			return handleSetHomePage();
 		case MENU_REFRESH:
 			reloadPageUrl(myPageLoadCount);
-			return true;
-		case MENU_PURCHASE:
-			showDialog(DIALOG_PURCHASE_ID);
 			return true;
 		case MENU_CLOSE:
 			finish();
@@ -314,35 +290,13 @@ public final class TTActivity extends Activity {
 		builder.setTitle(getResources().getText(R.string.dialog_title));
 		builder.setView(view);
 		switch (id) {
-		case DIALOG_PURCHASE_SUCCES_ID:
-			view.setText(getResources().getText(R.string.dialog_purchase_success));
-			builder.setView(view);
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
-			break;
-		case DIALOG_PURCHASE_CANCEL_ID:
-			view.setText(getResources().getText(R.string.dialog_purchase_cancelled));
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
-			break;
-		case DIALOG_PURCHASE_REFUND_ID:
-			view.setText(getResources().getText(R.string.dialog_purchase_refunded));
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
-			break;
-		case DIALOG_PURCHASE_FAIL_ID:
-			view.setText(getResources().getText(R.string.dialog_purchase_failed));
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
-			break;
 		case DIALOG_ABOUT_ID:
-			view.setText(getResources().getText(R.string.dialog_about_text_noads));
-			if (myBillingSupported && myAdsEnabled && myTestFlag) {
+			if (myAdsEnabled) {
 				view.setText(getResources().getText(R.string.dialog_about_text));
-				builder.setPositiveButton(getResources().getText(R.string.dialog_about_donate),
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int whichButton) {
-								myBillingService.requestPurchase("net.atoom.android.tt2.noads", null);
-							}
-						});
+			} else {
+				view.setText(getResources().getText(R.string.dialog_about_text_noads));
 			}
-			builder.setNegativeButton(getResources().getText(R.string.dialog_about_ok), null);
+			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		}
 		return builder.create();
@@ -437,6 +391,16 @@ public final class TTActivity extends Activity {
 	private void initAdvertising() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initialzing advertising");
+
+		try {
+			PackageInfo info = getPackageManager().getPackageInfo("net.atoom.android.tt3",
+					PackageManager.GET_ACTIVITIES);
+			if (info != null) {
+				myAdsEnabled = false;
+			}
+		} catch (NameNotFoundException e) {
+		}
+
 		if (!myAdsEnabled) {
 			hideAdView();
 		} else {
@@ -447,24 +411,6 @@ public final class TTActivity extends Activity {
 				}
 			}, AD_INIT_DELAY_MS);
 		}
-	}
-
-	private void enableAdvertising() {
-		if (LogBridge.isLoggable())
-			LogBridge.i("Enabling advertising");
-		myAdsEnabled = true;
-		storePreferences();
-		showAdView();
-		initAdView();
-	}
-
-	private void disableAdvertising() {
-		if (LogBridge.isLoggable())
-			LogBridge.i("Disabling advertising");
-		myAdsEnabled = false;
-		storePreferences();
-		hideAdView();
-		destroyAdView();
 	}
 
 	private void initAdView() {
@@ -504,12 +450,8 @@ public final class TTActivity extends Activity {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
 		if (settings != null) {
 			myHomePageUrl = settings.getString(PREFS_HOMEPAGE_URL, CONTENT_STARTPAGEURL);
-			myAdsEnabled = settings.getBoolean(PREFS_ADS_ENABLED, true);
-			myTxRestored = settings.getBoolean(PREFS_TX_RESTORED, false);
 			if (LogBridge.isLoggable()) {
 				LogBridge.i(" " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
-				LogBridge.i(" " + PREFS_ADS_ENABLED + "=" + myAdsEnabled);
-				LogBridge.i(" " + PREFS_TX_RESTORED + "=" + myTxRestored);
 			}
 		}
 	}
@@ -522,14 +464,10 @@ public final class TTActivity extends Activity {
 			SharedPreferences.Editor editor = settings.edit();
 			if (editor != null) {
 				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
-				editor.putBoolean(PREFS_ADS_ENABLED, myAdsEnabled);
-				editor.putBoolean(PREFS_TX_RESTORED, myTxRestored);
 				editor.commit();
 			}
 			if (LogBridge.isLoggable()) {
 				LogBridge.i(" " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
-				LogBridge.i(" " + PREFS_ADS_ENABLED + "=" + myAdsEnabled);
-				LogBridge.i(" " + PREFS_TX_RESTORED + "=" + myTxRestored);
 			}
 		}
 	}
@@ -579,42 +517,6 @@ public final class TTActivity extends Activity {
 					if (currentPageId.length() == 6) {
 						currentPageId = currentPageId.substring(0, 3);
 					}
-				}
-
-				// testcode
-				if (newPageId.equals("050")) {
-					myTestFlag = true;
-					Toast.makeText(TTActivity.this, "Testflag set", Toast.LENGTH_SHORT).show();
-					newPageId = currentPageId;
-					removeDialog(DIALOG_ABOUT_ID);
-				}
-				if (newPageId.equals("051")) {
-					myTxRestored = false;
-					storePreferences();
-					enableAdvertising();
-					newPageId = currentPageId;
-				}
-				if (newPageId.equals("052")) {
-					myTxRestored = true;
-					storePreferences();
-					disableAdvertising();
-					newPageId = currentPageId;
-				}
-				if (newPageId.equals("053")) {
-					myBillingService.requestPurchase("android.test.purchased", null);
-					newPageId = currentPageId;
-				}
-				if (newPageId.equals("054")) {
-					myBillingService.requestPurchase("android.test.canceled", null);
-					newPageId = currentPageId;
-				}
-				if (newPageId.equals("055")) {
-					myBillingService.requestPurchase("android.test.refunded", null);
-					newPageId = currentPageId;
-				}
-				if (newPageId.equals("056")) {
-					myBillingService.requestPurchase("net.atoom.android.tt2.noads", null);
-					newPageId = currentPageId;
 				}
 
 				if (currentPageId.equals(newPageId)) {
@@ -721,85 +623,5 @@ public final class TTActivity extends Activity {
 	private void disableButton(final Button button) {
 		button.setEnabled(false);
 		button.setFocusable(false);
-	}
-
-	// vending
-	private void initVending() {
-		myPurchaseObserver = new TTPurchaseObserver(this, myHandler);
-		myBillingService = new BillingService();
-		myBillingService.setContext(this);
-		ResponseHandler.register(myPurchaseObserver);
-		if (!myBillingService.checkBillingSupported()) {
-			myBillingSupported = false;
-		} else {
-			if (!myTxRestored) {
-				myBillingService.restoreTransactions();
-			}
-		}
-	}
-
-	private class TTPurchaseObserver extends PurchaseObserver {
-
-		public TTPurchaseObserver(Activity activity, Handler handler) {
-			super(activity, handler);
-		}
-
-		@Override
-		public void onBillingSupported(boolean supported) {
-			myBillingSupported = supported;
-			if (LogBridge.isLoggable()) {
-				if (supported) {
-					LogBridge.i("Billing is supported");
-				} else {
-					LogBridge.w("Billing not supported");
-				}
-			}
-		}
-
-		@Override
-		public void onPurchaseStateChange(PurchaseState purchaseState, String itemId, int quantity, long purchaseTime,
-				String developerPayload) {
-			if (LogBridge.isLoggable())
-				LogBridge.w("onPurchaseStateChange() itemId: " + itemId + " " + purchaseState);
-			if (purchaseState == PurchaseState.PURCHASED) {
-				showDialog(DIALOG_PURCHASE_SUCCES_ID);
-				disableAdvertising();
-			} else if (purchaseState == PurchaseState.REFUNDED) {
-				enableAdvertising();
-				showDialog(DIALOG_PURCHASE_REFUND_ID);
-			} else if (purchaseState == PurchaseState.CANCELED) {
-				showDialog(DIALOG_PURCHASE_CANCEL_ID);
-			}
-			removeDialog(DIALOG_ABOUT_ID); // rm from cache
-		}
-
-		@Override
-		public void onRequestPurchaseResponse(RequestPurchase request, ResponseCode responseCode) {
-			if (responseCode == ResponseCode.RESULT_OK) {
-				if (LogBridge.isLoggable())
-					LogBridge.w("Purchase successfull (" + request.mProductId + ")");
-			} else if (responseCode == ResponseCode.RESULT_USER_CANCELED) {
-				if (LogBridge.isLoggable())
-					LogBridge.w("Purchase canceled (" + request.mProductId + ")");
-				showDialog(DIALOG_PURCHASE_CANCEL_ID);
-			} else {
-				if (LogBridge.isLoggable())
-					LogBridge.w("Purchase failed (" + request.mProductId + ")");
-				showDialog(DIALOG_PURCHASE_FAIL_ID);
-			}
-		}
-
-		@Override
-		public void onRestoreTransactionsResponse(RestoreTransactions request, ResponseCode responseCode) {
-			if (responseCode == ResponseCode.RESULT_OK) {
-				if (LogBridge.isLoggable())
-					LogBridge.i("Transactions restored: " + responseCode);
-				myTxRestored = true;
-				storePreferences();
-			} else {
-				if (LogBridge.isLoggable())
-					LogBridge.w("Transactions error: " + responseCode);
-			}
-		}
 	}
 }

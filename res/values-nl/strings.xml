@@ -20,12 +20,4 @@
 	<string name="dialog_about_text_noads"> Atoom TeleTEKST is een onofficiele retro style tekst gebaseerde browser voor NOS
 		teletekst.\n\nVoor meer informatie, code en verzoekjes zie:\nhttps://github.com/atoomnet/AtoomTT
 	</string>
-	<string name="dialog_purchase_success">Hartelijk dank! We hebben je donatie ontvangen. Als dank zullen we je geen banners meer tonen!\n\n
-		We wensen je verder veel plezier met Atoom TeleTEXT!</string>
-	<string name="dialog_purchase_cancelled">Oeps.. je donatie is geannuleerd. Er zal niets worden afgeschreven. Als er iets mis is gegaan kun
-		je het later nog eens proberen.\n\nWe wensen je verder veel plezier met Atoom TeleTEXT!</string>
-	<string name="dialog_purchase_refunded">We hebben je donatie teruggestort. Vanaf nu zullen we je weer banners tonen.\n\nWe wensen je verder
-		veel plezier met Atoom TeleTEXT!</string>
-	<string name="dialog_purchase_failed">Oeps.. er iets is misgegaan tijdens het verwerken. Er zal niets worden afgeschreven. Je kunt het
-		later nog eens proberen.\n\nWe wensen je verder veel plezier met Atoom TeleTEXT!</string>
 </resources>
