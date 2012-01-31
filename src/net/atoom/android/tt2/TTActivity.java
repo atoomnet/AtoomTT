@@ -26,6 +26,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -33,6 +35,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
@@ -57,12 +60,18 @@ public final class TTActivity extends Activity {
 
 	public static final String LOGGING_TAG = "AtoomTT";
 
+	private static final String ATOOMTT_PACKAGE = "net.atoom.android.tt2";
+	private static final String ATOOMTTDONATE_PACKAGE = "net.atoom.android.tt3";
+
 	private static final String CONTENT_STARTPAGEURL = "http://teletekst.nos.nl/tekst/101-01.html";
 
 	private static final String PREFS_HOMEPAGE_URL = "homepageUrl";
+	private static final String PREFS_INSTALLED_VERSION = "installedVersion";
 
 	private static final String TEMPLATE_FILENAME = "template.html";
 	private static final String TEMPLATE_PLACEHOLDER = "[pageContent]";
+
+	private static final String DEFAULT_VERSION = "0.0.0";
 
 	private static final int DIALOG_ABOUT_ID = 0;
 
@@ -80,6 +89,8 @@ public final class TTActivity extends Activity {
 	private final Handler myHandler = new Handler();
 	private final BoundStack<PageEntity> myHistoryStack = new BoundStack<PageEntity>(HISTORY_SIZE);
 	private String myHomePageUrl = CONTENT_STARTPAGEURL;
+	private String myInstalledVersion = DEFAULT_VERSION;
+	private String myCurrentVersion = DEFAULT_VERSION;
 	private PageEntity myCurrentPageEntity;
 	private String myTemplate;
 	private int myPageLoadCount = 0;
@@ -119,7 +130,8 @@ public final class TTActivity extends Activity {
 		initButtons();
 		initWebView();
 
-		initLocationTracking();
+		loadCurrentVersion();
+//		initLocationTracking();
 		initAdvertising();
 	}
 
@@ -127,6 +139,7 @@ public final class TTActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		isStopped = false;
+		handleShowWelcome();
 		loadPageUrl(myHomePageUrl, true);
 	}
 
@@ -287,12 +300,21 @@ public final class TTActivity extends Activity {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		TextView view = new TextView(this);
 		view.setPadding(10, 10, 10, 10);
-		builder.setTitle(getResources().getText(R.string.dialog_title));
+		builder.setTitle(getResources().getText(R.string.dialog_title) + " v" + myCurrentVersion);
 		builder.setView(view);
 		switch (id) {
 		case DIALOG_ABOUT_ID:
 			if (myAdsEnabled) {
 				view.setText(getResources().getText(R.string.dialog_about_text));
+				builder.setNegativeButton(getResources().getText(R.string.dialog_about_donate),
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int whichButton) {
+								Intent intent = new Intent(Intent.ACTION_VIEW);
+								intent.setData(Uri.parse("market://details?id=" + ATOOMTTDONATE_PACKAGE));
+								startActivity(intent);
+								finish();
+							}
+						});
 			} else {
 				view.setText(getResources().getText(R.string.dialog_about_text_noads));
 			}
@@ -321,6 +343,14 @@ public final class TTActivity extends Activity {
 		storePreferences();
 		Toast.makeText(getApplicationContext(), R.string.toast_homepageset, Toast.LENGTH_SHORT).show();
 		return true;
+	}
+
+	private void handleShowWelcome() {
+		if (!myInstalledVersion.equals(myCurrentVersion)) {
+			myInstalledVersion = myCurrentVersion;
+			storePreferences();
+			showDialog(DIALOG_ABOUT_ID);
+		}
 	}
 
 	// location
@@ -393,9 +423,8 @@ public final class TTActivity extends Activity {
 			LogBridge.i("Initialzing advertising");
 
 		try {
-			PackageInfo info = getPackageManager().getPackageInfo("net.atoom.android.tt3",
-					PackageManager.GET_ACTIVITIES);
-			if (info != null) {
+			PackageInfo info = getPackageManager().getPackageInfo(ATOOMTTDONATE_PACKAGE, PackageManager.GET_ACTIVITIES);
+			if (getPackageManager().checkSignatures(ATOOMTT_PACKAGE, ATOOMTTDONATE_PACKAGE) == PackageManager.SIGNATURE_MATCH) {
 				myAdsEnabled = false;
 			}
 		} catch (NameNotFoundException e) {
@@ -450,8 +479,10 @@ public final class TTActivity extends Activity {
 		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
 		if (settings != null) {
 			myHomePageUrl = settings.getString(PREFS_HOMEPAGE_URL, CONTENT_STARTPAGEURL);
+			myInstalledVersion = settings.getString(PREFS_INSTALLED_VERSION, myInstalledVersion);
 			if (LogBridge.isLoggable()) {
 				LogBridge.i(" " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
+				LogBridge.i(" " + PREFS_INSTALLED_VERSION + "=" + myInstalledVersion);
 			}
 		}
 	}
@@ -464,12 +495,23 @@ public final class TTActivity extends Activity {
 			SharedPreferences.Editor editor = settings.edit();
 			if (editor != null) {
 				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
+				editor.putString(PREFS_INSTALLED_VERSION, myInstalledVersion);
 				editor.commit();
 			}
 			if (LogBridge.isLoggable()) {
 				LogBridge.i(" " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
+				LogBridge.i(" " + PREFS_INSTALLED_VERSION + "=" + myInstalledVersion);
 			}
 		}
+	}
+
+	private void resetPreferences() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Resetting preferences");
+		myHomePageUrl = CONTENT_STARTPAGEURL;
+		myInstalledVersion = DEFAULT_VERSION;
+		storePreferences();
+		Toast.makeText(this, "Preferences reset", Toast.LENGTH_SHORT).show();
 	}
 
 	private void loadTemplate() {
@@ -497,6 +539,21 @@ public final class TTActivity extends Activity {
 		}
 	}
 
+	private void loadCurrentVersion() {
+		if (LogBridge.isLoggable())
+			LogBridge.i("Initializing currentVersion");
+		try {
+			PackageInfo packageInfo = getPackageManager()
+					.getPackageInfo(ATOOMTT_PACKAGE, PackageManager.GET_ACTIVITIES);
+			myCurrentVersion = packageInfo.versionName;
+			if (LogBridge.isLoggable())
+				LogBridge.i("Installed version is " + myCurrentVersion);
+		} catch (NameNotFoundException e) {
+			if (LogBridge.isLoggable())
+				LogBridge.w("Failed to determine current version");
+		}
+	}
+
 	// edittext
 	private void initEditText() {
 		if (LogBridge.isLoggable())
@@ -510,6 +567,7 @@ public final class TTActivity extends Activity {
 					return;
 
 				String newPageId = myPageEditText.getText() + "";
+
 				String currentPageId = "";
 				PageEntity pageEntity = myCurrentPageEntity;
 				if (pageEntity != null && pageEntity.getPageId() != null) {
@@ -519,14 +577,18 @@ public final class TTActivity extends Activity {
 					}
 				}
 
-				if (currentPageId.equals(newPageId)) {
-					if (LogBridge.isLoggable())
-						LogBridge.i("Ignoring newPageId " + newPageId + " to prevent recursion");
+				if (newPageId.equals("000")) {
+					resetPreferences();
 				} else {
-					String newPageUrl = "http://teletekst.nos.nl/tekst/" + newPageId + "-01.html";
-					loadPageUrl(newPageUrl, true);
+					if (currentPageId.equals(newPageId)) {
+						if (LogBridge.isLoggable())
+							LogBridge.i("Ignoring newPageId " + newPageId + " to prevent recursion");
+					} else {
+						String newPageUrl = "http://teletekst.nos.nl/tekst/" + newPageId + "-01.html";
+						loadPageUrl(newPageUrl, true);
+					}
+					myPageEditText.clearFocus();
 				}
-				myPageEditText.clearFocus();
 
 				// close soft keyboard
 				InputMethodManager inputManager = (InputMethodManager) TTActivity.this
