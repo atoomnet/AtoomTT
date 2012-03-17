@@ -57,10 +57,7 @@ public final class PageLoader {
 
 	public void loadPage(String pageUrl, PageLoadPriority pageLoadPriority,
 			PageLoadCompletionHandler pageLoadCompletionHandler) {
-
 		if (pageUrl == null || "".equals(pageUrl)) {
-			if (LogBridge.isLoggable())
-				LogBridge.w("Stop offering me invalid urls!");
 			return;
 		}
 
@@ -71,7 +68,6 @@ public final class PageLoader {
 	}
 
 	private PageEntity doLoadPage(final String pageUrl) {
-
 		PageEntity pageEntity = myPageCache.get(pageUrl);
 		if (pageEntity != null) {
 			if ((System.currentTimeMillis() - CACHE_TIME) < pageEntity.getCreated()) {
@@ -79,7 +75,7 @@ public final class PageLoader {
 					LogBridge.i("Returning cached entity: " + pageUrl);
 				return pageEntity;
 			}
-			if (myHttpConnection.isPageModified(pageUrl, pageEntity.getETag())) {
+			if (!myHttpConnection.isPageModified(pageUrl, pageEntity.getETag())) {
 				pageEntity.setCreated(System.currentTimeMillis());
 				if (LogBridge.isLoggable())
 					LogBridge.i("Returning unmodified entity: " + pageUrl);

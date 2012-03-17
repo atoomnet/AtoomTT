@@ -5,14 +5,14 @@
     <string name="app_name">TeleTEKST</string>
     <string name="main_title">NOS TeleTEKST</string>
     <string name="menu_about">Informatie</string>
-    <string name="menu_close">Sluiten</string>
+    <string name="menu_close">Sluit</string>
     <string name="menu_homepage">Startpagina</string>
     <string name="menu_refresh">Herladen</string>
     <string name="toast_pagenotfound">Pagina kan niet geladen worden</string>
     <string name="toast_pagereload">Pagina wordt ververst</string>
     <string name="toast_homepageset">Startpagina ingesteld</string>
     <string name="dialog_title">Atoom TeleTEKST</string>
-    <string name="dialog_about_ok">Terug</string>
+    <string name="dialog_about_ok">Verder</string>
     <string name="dialog_about_donate">Doneer</string>
     <string name="dialog_about_text">Atoom TeleTEKST is een onofficiele gratis retro style tekst gebaseerde browser voor NOS
 		teletekst.\n\nSteun deze gratis app met slechts €0.99! Als dank zullen we je geen reclame banners meer tonen.\n\nVoor

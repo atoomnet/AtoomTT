@@ -11,7 +11,7 @@
 	<string name="toast_pagereload">Reloading page...</string>
 	<string name="toast_homepageset">Homepage set!</string>
 	<string name="dialog_title">Atoom TeleTEXT</string>
-	<string name="dialog_about_ok">Back</string>
+	<string name="dialog_about_ok">Continue</string>
 	<string name="dialog_about_donate">Donate</string>
 	<string name="dialog_about_text"> Atoom TeleTEXT is an unofficial retro style text based browser for the teletext service provided
 		by the Dutch Broadcasting Association (NOS)\n\nSupport this free app and remove all ads by making a €0.99

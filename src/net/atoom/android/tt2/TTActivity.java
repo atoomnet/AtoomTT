@@ -202,9 +202,10 @@ public final class TTActivity extends Activity {
 
 	// api
 	public synchronized void loadPageUrl(final String pageUrl, final boolean updateHistory) {
-		if (isStopped)
+		if (isStopped) {
 			return;
-
+		}
+		
 		myPageLoadCount++; // cancels previous reloads
 
 		myPageLoader.loadPage(pageUrl, PageLoadPriority.HIGH, new PageLoadCompletionHandler() {

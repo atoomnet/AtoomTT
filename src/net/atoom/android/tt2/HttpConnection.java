@@ -93,9 +93,9 @@ public final class HttpConnection {
 				return false;
 			}
 			Header eTagHeader = httpResponse.getFirstHeader(ETAG_HEADER);
-			if (eTagHeader != null && eTagHeader.getValue().equals(eTag)) {
+			if (eTagHeader == null || !eTagHeader.getValue().equals(eTag)) {
 				if (LogBridge.isLoggable())
-					LogBridge.i("Page not modified: " + pageUrl + " (" + eTag + ")");
+					LogBridge.i("Page is modified: " + pageUrl);
 				return true;
 			}
 		} catch (ClientProtocolException e) {
@@ -106,7 +106,7 @@ public final class HttpConnection {
 				LogBridge.w("Failed to check page: " + e.getMessage());
 		}
 		if (LogBridge.isLoggable())
-			LogBridge.i("Page is modified: " + pageUrl + "/ (" + eTag + ")");
+			LogBridge.i("Page not modified: " + pageUrl);
 		return false;
 	}
 }
