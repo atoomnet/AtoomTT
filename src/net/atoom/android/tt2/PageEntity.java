@@ -15,29 +15,21 @@
  */
 package net.atoom.android.tt2;
 
+
 public final class PageEntity {
 
 	private String myPageId;
-	private String myPageUrl;
 	private String myHtmlData;
-	private String myETag;
 
 	private String myNextPageId;
 	private String myNextSubPageId;
 	private String myPrevPageId;
 	private String myPrevSubPageId;
 
-	private String myNextPageUrl;
-	private String myNextSubPageUrl;
-	private String myPrevPageUrl;
-	private String myPrevSubPageUrl;
-
 	private long myCreated;
 
-	public PageEntity(final String pageUrl, final String htmlData, final String eTag) {
-		myPageUrl = pageUrl;
-		myHtmlData = htmlData;
-		myETag = eTag;
+	public PageEntity(final String pageId) {
+		myPageId = pageId;
 		myCreated = System.currentTimeMillis();
 	}
 
@@ -49,28 +41,12 @@ public final class PageEntity {
 		myPageId = pageId;
 	}
 
-	public String getPageUrl() {
-		return myPageUrl;
-	}
-
-	public void setPageUrl(final String pageUrl) {
-		myPageUrl = pageUrl;
-	}
-
 	public String getHtmlData() {
 		return myHtmlData;
 	}
 
 	public void setHtmlData(final String htmlData) {
 		myHtmlData = htmlData;
-	}
-
-	public String getETag() {
-		return myETag;
-	}
-
-	public void setETag(final String eTag) {
-		myETag = eTag;
 	}
 
 	public long getCreated() {
@@ -111,37 +87,5 @@ public final class PageEntity {
 
 	public void setPrevSubPageId(String prevSubPageId) {
 		myPrevSubPageId = prevSubPageId;
-	}
-
-	public String getNextPageUrl() {
-		return myNextPageUrl;
-	}
-
-	public void setNextPageUrl(final String nextPageUrl) {
-		myNextPageUrl = nextPageUrl;
-	}
-
-	public String getNextSubPageUrl() {
-		return myNextSubPageUrl;
-	}
-
-	public void setNextSubPageUrl(final String nextSubPageUrl) {
-		myNextSubPageUrl = nextSubPageUrl;
-	}
-
-	public String getPrevPageUrl() {
-		return myPrevPageUrl;
-	}
-
-	public void setPrevPageUrl(final String prevPageUrl) {
-		myPrevPageUrl = prevPageUrl;
-	}
-
-	public String getPrevSubPageUrl() {
-		return myPrevSubPageUrl;
-	}
-
-	public void setPrevSubPageUrl(final String prevSubPageUrl) {
-		myPrevSubPageUrl = prevSubPageUrl;
 	}
 }

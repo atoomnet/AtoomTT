@@ -15,27 +15,47 @@
  */
 package net.atoom.android.tt2;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.atoom.android.tt2.util.LRUCache;
 import net.atoom.android.tt2.util.LogBridge;
+import net.atoom.android.tt2.util.PageIdUtil;
 
 public final class PageLoader {
 
 	private final static int CACHE_SIZE = 100;
 	private final static long CACHE_TIME = 30000;
 
-	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(CACHE_SIZE);
-	private final HttpConnection myHttpConnection;
-	private final PageProcessor myProcessor;
+	private final static String[] FTL_CLASS = new String[] { "red", "lime",
+			"yellow", "aqua" };
+
+	private final Pattern PATTERN_PAGELINK = Pattern
+			.compile("((?<=[\\s+\\+,-]|^)(\\d{3}/\\d{1,2}(?=[\\s+\\+,-]|$))|((?<=[\\s+\\+,-]|^)\\d{3}(?=[\\s+\\+,-]|$)))");
+
+	private final Pattern PATTERN_FASTTEKST = Pattern
+			.compile("([^\\s]+\\s?[^\\s]+)");
+
+	private final long REQUEST_ID = System.currentTimeMillis();
+
+	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(
+			CACHE_SIZE);
+
 	private final PriorityBlockingQueue<PageLoadRequest> myLoadRequests;
 	private final ExecutorService myExecutorService;
 
 	public PageLoader() {
-		myHttpConnection = new HttpConnection();
-		myProcessor = new PageProcessor();
 		myLoadRequests = new PriorityBlockingQueue<PageLoadRequest>();
 		myExecutorService = Executors.newFixedThreadPool(1);
 		myExecutorService.submit(new Runnable() {
@@ -44,9 +64,15 @@ public final class PageLoader {
 				try {
 					while (true) {
 						PageLoadRequest plr = myLoadRequests.take();
-						PageEntity pe = doLoadPage(plr.getPageUrl());
-						if (plr.getPageLoadCompletionHandler() != null) {
-							plr.getPageLoadCompletionHandler().pageLoadCompleted(pe);
+
+						try {
+							PageEntity pe = doLoadPage(plr.getPageId());
+							if (plr.getPageLoadCompletionHandler() != null) {
+								plr.getPageLoadCompletionHandler()
+										.pageLoadCompleted(pe);
+							}
+						} catch (Exception e) {
+							LogBridge.w("Exception!!!!!!!!!");
 						}
 					}
 				} catch (InterruptedException e) {
@@ -55,72 +81,162 @@ public final class PageLoader {
 		});
 	}
 
-	public void loadPage(String pageUrl, PageLoadPriority pageLoadPriority,
+	public void loadPage(String pageId, PageLoadPriority pageLoadPriority,
 			PageLoadCompletionHandler pageLoadCompletionHandler) {
-		if (pageUrl == null || "".equals(pageUrl)) {
+
+		if (pageId == null || pageId.equals("")) {
 			return;
 		}
+		pageId = PageIdUtil.normalize(pageId);
 
 		if (LogBridge.isLoggable())
-			LogBridge.i("Scheduling pageload request: " + pageUrl);
-		
-		myLoadRequests.offer(new PageLoadRequest(pageUrl, pageLoadPriority, pageLoadCompletionHandler));
+			LogBridge.i("Scheduling pageload request: " + pageId);
+
+		final PageLoadRequest pageLoadRequest = new PageLoadRequest(pageId,
+				pageLoadPriority, pageLoadCompletionHandler);
+
+		if (!myLoadRequests.offer(pageLoadRequest)) {
+			LogBridge.w("Offer failed");
+		}
 	}
 
-	private PageEntity doLoadPage(final String pageUrl) {
-		PageEntity pageEntity = myPageCache.get(pageUrl);
+	private PageEntity doLoadPage(final String pageId) {
+		PageEntity pageEntity = myPageCache.get(pageId);
 		if (pageEntity != null) {
-			if ((System.currentTimeMillis() - CACHE_TIME) < pageEntity.getCreated()) {
+			if ((System.currentTimeMillis() - CACHE_TIME) < pageEntity
+					.getCreated()) {
 				if (LogBridge.isLoggable())
-					LogBridge.i("Returning cached entity: " + pageUrl);
+					LogBridge.i("Returning cached entity: " + pageId);
 				return pageEntity;
 			}
-			if (!myHttpConnection.isPageModified(pageUrl, pageEntity.getETag())) {
-				pageEntity.setCreated(System.currentTimeMillis());
-				if (LogBridge.isLoggable())
-					LogBridge.i("Returning unmodified entity: " + pageUrl);
-				return pageEntity;
-			}
-			myPageCache.remove(pageUrl);
+			myPageCache.remove(pageId);
 		}
 
-		pageEntity = myHttpConnection.loadPage(pageUrl);
-		if (pageEntity != null) {
-			processPageEntity(pageEntity);
-			myPageCache.put(pageUrl, pageEntity);
+		URL pageUrl;
+		try {
+			pageUrl = new URL("http://teletekst.e-office.com/g/android?p="
+					+ pageId + "&id=" + REQUEST_ID);
+		} catch (MalformedURLException e) {
+			return null;
 		}
+
+		final List<String> lines = readPageURL(pageUrl);
+		if (lines == null)
+			return null;
+
+		pageEntity = createEntity(pageId, lines);
+		if (pageEntity == null)
+			return null;
+
+		myPageCache.put(pageId, pageEntity);
 
 		if (LogBridge.isLoggable())
-			LogBridge.i("Returning new entity: " + pageUrl);
+			LogBridge.i("Returning new entity: " + pageId);
+
 		return pageEntity;
 	}
 
-	private void processPageEntity(PageEntity pageEntity) {
-		if (LogBridge.isLoggable())
-			LogBridge.i("Processing new entity: " + pageEntity.getPageUrl());
+	private PageEntity createEntity(final String pageId,
+			final List<String> lines) {
 
-		pageEntity.setPageId(myProcessor.pageIdFromUrl(pageEntity.getPageUrl()));
+		final PageEntity pageEntity = new PageEntity(pageId);
+		final List<String> ftl = new LinkedList<String>();
+		final StringBuffer sb = new StringBuffer();
 
-		pageEntity.setNextPageId(myProcessor.nextPageIdFromData(pageEntity.getHtmlData()));
-		if (!pageEntity.getNextPageId().equals("")) {
-			pageEntity.setNextPageUrl(myProcessor.pageUrlFromId(pageEntity.getNextPageId()));
+		for (int i = 0; i < lines.size(); i++) {
+			String line = lines.get(i).trim();
+			line = line.replace("<pre>", "");
+			line = line.replace("</pre>", "");
+			if (line.startsWith("pn=p_")) {
+				pageEntity.setPrevPageId(line.replace("pn=p_", ""));
+			} else if (line.startsWith("pn=n_")) {
+				pageEntity.setNextPageId(line.replace("pn=n_", ""));
+			} else if (line.startsWith("pn=ps")) {
+				pageEntity.setPrevSubPageId(line.replace("pn=ps", ""));
+			} else if (line.startsWith("pn=ns")) {
+				pageEntity.setNextSubPageId(line.replace("pn=ns", ""));
+			} else if (line.startsWith("ftl=")) {
+				ftl.add(line.replace("ftl=", ""));
+			} else {
+				if (i < (lines.size() - 1)) {
+					final Matcher m = PATTERN_PAGELINK.matcher(line);
+					while (m.find()) {
+						m.appendReplacement(
+								sb,
+								"<a href=\""
+										+ PageIdUtil.toInternalLink(m.group(1))
+										+ "\">" + m.group(1) + "</a>");
+					}
+					m.appendTail(sb);
+				} else {
+					sb.append("\n  ");
+					Matcher m = PATTERN_FASTTEKST.matcher(line);
+					int ftlIndex = 0;
+					while (m.find() && ftlIndex < 4) {
+						if (ftlIndex < ftl.size()) {
+							m.appendReplacement(
+									sb,
+									"<a class=\""
+											+ FTL_CLASS[ftlIndex]
+											+ "\" href=\""
+											+ PageIdUtil.toInternalLink(ftl
+													.get(ftlIndex++)) + "\">"
+											+ m.group(1) + "</a>");
+						} else {
+							m.appendReplacement(sb, m.group(1));
+						}
+					}
+					m.appendTail(sb);
+				}
+				sb.append("\n");
+			}
 		}
+		pageEntity.setHtmlData(sb.toString());
+		return pageEntity;
+	}
 
-		pageEntity.setNextSubPageId(myProcessor.nextSubPageIdFromData(pageEntity.getHtmlData()));
-		if (!pageEntity.getNextSubPageId().equals("")) {
-			pageEntity.setNextSubPageUrl(myProcessor.pageUrlFromId(pageEntity.getNextSubPageId()));
+	private List<String> readPageURL(URL url) {
+
+		List<String> lines = null;
+		byte[] bytes = new byte[50];
+		byte[] bytes2 = new byte[2024];
+
+		URLConnection con = null;
+		InputStream is = null;
+		try {
+			con = url.openConnection();
+			is = new BufferedInputStream(con.getInputStream());
+
+			int index = 0;
+			int index2 = 0;
+			int c = is.read();
+			while (c != -1) {
+				byte b = (byte) c;
+				bytes2[index2++] = b;
+				if (b > 32) {
+					bytes[index++] = b;
+				} else if (index < 39 && b != 10) {
+					bytes[index++] = 32;
+				} else {
+					if (lines == null)
+						lines = new LinkedList<String>();
+					lines.add(new String(bytes));
+					for (int i = 0; i < 50; i++)
+						bytes[i] = 0;
+					index = 0;
+				}
+				c = is.read();
+			}
+			lines.add(new String(bytes));
+		} catch (final IOException e) {
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {
+				}
+			}
 		}
-
-		pageEntity.setPrevPageId(myProcessor.prevPageIdFromData(pageEntity.getHtmlData()));
-		if (!pageEntity.getPrevPageId().equals("")) {
-			pageEntity.setPrevPageUrl(myProcessor.pageUrlFromId(pageEntity.getPrevPageId()));
-		}
-
-		pageEntity.setPrevSubPageId(myProcessor.prevSubPageIdFromData(pageEntity.getHtmlData()));
-		if (!pageEntity.getPrevSubPageId().equals("")) {
-			pageEntity.setPrevSubPageUrl(myProcessor.pageUrlFromId(pageEntity.getPrevSubPageId()));
-		}
-
-		pageEntity.setHtmlData(myProcessor.processRawPage(pageEntity.getHtmlData()));
+		return lines;
 	}
 }

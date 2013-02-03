@@ -63,9 +63,9 @@ public final class TTActivity extends Activity {
 	private static final String ATOOMTT_PACKAGE = "net.atoom.android.tt2";
 	private static final String ATOOMTTDONATE_PACKAGE = "net.atoom.android.tt3";
 
-	private static final String CONTENT_STARTPAGEURL = "http://teletekst.nos.nl/tekst/101-01.html";
+	private static final String CONTENT_STARTPAGEID = "101-0";
 
-	private static final String PREFS_HOMEPAGE_URL = "homepageUrl";
+	private static final String PREFS_HOMEPAGE_ID = "homepageId";
 	private static final String PREFS_INSTALLED_VERSION = "installedVersion";
 
 	private static final String TEMPLATE_FILENAME = "template.html";
@@ -87,8 +87,9 @@ public final class TTActivity extends Activity {
 	// app
 	private final PageLoader myPageLoader = new PageLoader();
 	private final Handler myHandler = new Handler();
-	private final BoundStack<PageEntity> myHistoryStack = new BoundStack<PageEntity>(HISTORY_SIZE);
-	private String myHomePageUrl = CONTENT_STARTPAGEURL;
+	private final BoundStack<PageEntity> myHistoryStack = new BoundStack<PageEntity>(
+			HISTORY_SIZE);
+	private String myHomePageId = CONTENT_STARTPAGEID;
 	private String myInstalledVersion = DEFAULT_VERSION;
 	private String myCurrentVersion = DEFAULT_VERSION;
 	private PageEntity myCurrentPageEntity;
@@ -131,7 +132,7 @@ public final class TTActivity extends Activity {
 		initWebView();
 
 		loadCurrentVersion();
-//		initLocationTracking();
+		initLocationTracking();
 		initAdvertising();
 	}
 
@@ -140,7 +141,7 @@ public final class TTActivity extends Activity {
 		super.onStart();
 		isStopped = false;
 		handleShowWelcome();
-		loadPageUrl(myHomePageUrl, true);
+		loadPageUrl(myHomePageId, true);
 	}
 
 	@Override
@@ -201,53 +202,69 @@ public final class TTActivity extends Activity {
 	}
 
 	// api
-	public synchronized void loadPageUrl(final String pageUrl, final boolean updateHistory) {
+	public synchronized void loadPageUrl(final String pageId,
+			final boolean updateHistory) {
 		if (isStopped) {
 			return;
 		}
-		
+
 		myPageLoadCount++; // cancels previous reloads
+		myPageLoader.loadPage(pageId, PageLoadPriority.HIGH,
+				new PageLoadCompletionHandler() {
 
-		myPageLoader.loadPage(pageUrl, PageLoadPriority.HIGH, new PageLoadCompletionHandler() {
-
-			@Override
-			public void pageLoadCompleted(final PageEntity pageEntity) {
-
-				if (pageEntity == null) {
-					myHandler.post(new Runnable() {
-						@Override
-						public void run() {
-							Toast.makeText(getApplicationContext(), R.string.toast_pagenotfound, Toast.LENGTH_SHORT)
-									.show();
-						}
-					});
-					return;
-				}
-
-				myHandler.post(new Runnable() {
 					@Override
-					public void run() {
-						PageEntity previousPageEntity = myCurrentPageEntity;
-						myCurrentPageEntity = pageEntity;
+					public void pageLoadCompleted(final PageEntity pageEntity) {
 
-						if (previousPageEntity != null && updateHistory
-								&& !previousPageEntity.getPageUrl().equals(pageUrl)) {
-							myHistoryStack.push(previousPageEntity);
+						if (pageEntity == null) {
+							myHandler.post(new Runnable() {
+								@Override
+								public void run() {
+									Toast.makeText(
+											getApplicationContext(),
+											R.string.toast_pagenotfound
+													+ pageId,
+											Toast.LENGTH_SHORT).show();
+								}
+							});
+							return;
 						}
-						updateEditText(pageEntity);
-						updateButtons(pageEntity);
-						updateWebView(pageEntity);
 
-						myPageLoader.loadPage(pageEntity.getNextPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(pageEntity.getPrevPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(pageEntity.getNextSubPageUrl(), PageLoadPriority.LOW, null);
-						myPageLoader.loadPage(pageEntity.getPrevSubPageUrl(), PageLoadPriority.LOW, null);
+						myHandler.post(new Runnable() {
+							@Override
+							public void run() {
+								PageEntity previousPageEntity = myCurrentPageEntity;
+								myCurrentPageEntity = pageEntity;
 
-						myHandler.postDelayed(new ReloadRunnable(TTActivity.this, myPageLoadCount), RELOAD_INTERVAL_MS);
+								if (previousPageEntity != null
+										&& updateHistory
+										&& !previousPageEntity.getPageId()
+												.equals(pageId)) {
+									myHistoryStack.push(previousPageEntity);
+								}
+								updateEditText(pageEntity);
+								updateButtons(pageEntity);
+								updateWebView(pageEntity);
+
+								myPageLoader.loadPage(
+										pageEntity.getNextPageId(),
+										PageLoadPriority.LOW, null);
+								myPageLoader.loadPage(
+										pageEntity.getPrevPageId(),
+										PageLoadPriority.LOW, null);
+								myPageLoader.loadPage(
+										pageEntity.getNextSubPageId(),
+										PageLoadPriority.LOW, null);
+								myPageLoader.loadPage(
+										pageEntity.getPrevPageId(),
+										PageLoadPriority.LOW, null);
+
+								myHandler.postDelayed(new ReloadRunnable(
+										TTActivity.this, myPageLoadCount),
+										RELOAD_INTERVAL_MS);
+							}
+						});
 					}
 				});
-			}
-		});
 
 	}
 
@@ -255,11 +272,13 @@ public final class TTActivity extends Activity {
 		if (isStopped)
 			return;
 		PageEntity pageEntity = myCurrentPageEntity;
-		if (myPageLoadCount == pageLoadCount && !isStopped && pageEntity != null) {
+		if (myPageLoadCount == pageLoadCount && !isStopped
+				&& pageEntity != null) {
 			if (LogBridge.isLoggable())
 				LogBridge.i("Reloading...");
-			Toast.makeText(getApplicationContext(), R.string.toast_pagereload, Toast.LENGTH_SHORT).show();
-			loadPageUrl(pageEntity.getPageUrl(), false);
+			Toast.makeText(getApplicationContext(), R.string.toast_pagereload,
+					Toast.LENGTH_SHORT).show();
+			loadPageUrl(pageEntity.getPageId(), false);
 		} else {
 			if (LogBridge.isLoggable())
 				LogBridge.i("Aborting reload");
@@ -271,11 +290,11 @@ public final class TTActivity extends Activity {
 			return;
 		PageEntity pageEntity = myCurrentPageEntity;
 		if (pageEntity != null) {
-			if (pageEntity.getNextSubPageUrl() != null) {
-				loadPageUrl(pageEntity.getNextSubPageUrl(), true);
+			if (pageEntity.getNextSubPageId() != null) {
+				loadPageUrl(pageEntity.getNextSubPageId(), true);
 			} else {
-				if (pageEntity.getNextPageUrl() != null) {
-					loadPageUrl(pageEntity.getNextPageUrl(), true);
+				if (pageEntity.getNextPageId() != null) {
+					loadPageUrl(pageEntity.getNextPageId(), true);
 				}
 			}
 		}
@@ -286,11 +305,11 @@ public final class TTActivity extends Activity {
 			return;
 		PageEntity pageEntity = myCurrentPageEntity;
 		if (pageEntity != null) {
-			if (pageEntity.getPrevSubPageUrl() != null) {
-				loadPageUrl(pageEntity.getPrevSubPageUrl(), true);
+			if (pageEntity.getPrevSubPageId() != null) {
+				loadPageUrl(pageEntity.getPrevSubPageId(), true);
 			} else {
-				if (pageEntity.getPrevPageUrl() != null) {
-					loadPageUrl(pageEntity.getPrevPageUrl(), true);
+				if (pageEntity.getPrevPageId() != null) {
+					loadPageUrl(pageEntity.getPrevPageId(), true);
 				}
 			}
 		}
@@ -301,25 +320,31 @@ public final class TTActivity extends Activity {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		TextView view = new TextView(this);
 		view.setPadding(10, 10, 10, 10);
-		builder.setTitle(getResources().getText(R.string.dialog_title) + " v" + myCurrentVersion);
+		builder.setTitle(getResources().getText(R.string.dialog_title) + " v"
+				+ myCurrentVersion);
 		builder.setView(view);
 		switch (id) {
 		case DIALOG_ABOUT_ID:
 			if (myAdsEnabled) {
 				view.setText(getResources().getText(R.string.dialog_about_text));
-				builder.setNegativeButton(getResources().getText(R.string.dialog_about_donate),
+				builder.setNegativeButton(
+						getResources().getText(R.string.dialog_about_donate),
 						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int whichButton) {
+							public void onClick(DialogInterface dialog,
+									int whichButton) {
 								Intent intent = new Intent(Intent.ACTION_VIEW);
-								intent.setData(Uri.parse("market://details?id=" + ATOOMTTDONATE_PACKAGE));
+								intent.setData(Uri.parse("market://details?id="
+										+ ATOOMTTDONATE_PACKAGE));
 								startActivity(intent);
 								finish();
 							}
 						});
 			} else {
-				view.setText(getResources().getText(R.string.dialog_about_text_noads));
+				view.setText(getResources().getText(
+						R.string.dialog_about_text_noads));
 			}
-			builder.setPositiveButton(getResources().getText(R.string.dialog_about_ok), null);
+			builder.setPositiveButton(
+					getResources().getText(R.string.dialog_about_ok), null);
 			break;
 		}
 		return builder.create();
@@ -330,7 +355,7 @@ public final class TTActivity extends Activity {
 		if (isStopped)
 			return true;
 		if (myHistoryStack.size() > 0) {
-			loadPageUrl(myHistoryStack.pop().getPageUrl(), false);
+			loadPageUrl(myHistoryStack.pop().getPageId(), false);
 		} else {
 			finish();
 		}
@@ -340,9 +365,10 @@ public final class TTActivity extends Activity {
 	private boolean handleSetHomePage() {
 		if (isStopped)
 			return true;
-		myHomePageUrl = myCurrentPageEntity.getPageUrl();
+		myHomePageId = myCurrentPageEntity.getPageId();
 		storePreferences();
-		Toast.makeText(getApplicationContext(), R.string.toast_homepageset, Toast.LENGTH_SHORT).show();
+		Toast.makeText(getApplicationContext(), R.string.toast_homepageset,
+				Toast.LENGTH_SHORT).show();
 		return true;
 	}
 
@@ -368,7 +394,8 @@ public final class TTActivity extends Activity {
 				myLocation = location;
 			}
 
-			public void onStatusChanged(String provider, int status, Bundle extras) {
+			public void onStatusChanged(String provider, int status,
+					Bundle extras) {
 			}
 
 			public void onProviderEnabled(String provider) {
@@ -377,7 +404,8 @@ public final class TTActivity extends Activity {
 			public void onProviderDisabled(String provider) {
 			}
 		};
-		manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 300000, 100f, myLocationListener);
+		manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+				300000, 100f, myLocationListener);
 	}
 
 	private void destroyLocationTracking() {
@@ -414,7 +442,8 @@ public final class TTActivity extends Activity {
 	}
 
 	private void updateWebView(PageEntity pageEntity) {
-		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER, pageEntity.getHtmlData());
+		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER,
+				pageEntity.getHtmlData());
 		myMainWebViewAnimator.updateWebView(htmlData);
 	}
 
@@ -424,8 +453,10 @@ public final class TTActivity extends Activity {
 			LogBridge.i("Initialzing advertising");
 
 		try {
-			PackageInfo info = getPackageManager().getPackageInfo(ATOOMTTDONATE_PACKAGE, PackageManager.GET_ACTIVITIES);
-			if (getPackageManager().checkSignatures(ATOOMTT_PACKAGE, ATOOMTTDONATE_PACKAGE) == PackageManager.SIGNATURE_MATCH) {
+			PackageInfo info = getPackageManager().getPackageInfo(
+					ATOOMTTDONATE_PACKAGE, PackageManager.GET_ACTIVITIES);
+			if (getPackageManager().checkSignatures(ATOOMTT_PACKAGE,
+					ATOOMTTDONATE_PACKAGE) == PackageManager.SIGNATURE_MATCH) {
 				myAdsEnabled = false;
 			}
 		} catch (NameNotFoundException e) {
@@ -477,13 +508,17 @@ public final class TTActivity extends Activity {
 	private void loadPreferences() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Loading preferences");
-		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
+		SharedPreferences settings = getSharedPreferences(LOGGING_TAG,
+				MODE_PRIVATE);
 		if (settings != null) {
-			myHomePageUrl = settings.getString(PREFS_HOMEPAGE_URL, CONTENT_STARTPAGEURL);
-			myInstalledVersion = settings.getString(PREFS_INSTALLED_VERSION, myInstalledVersion);
+			myHomePageId = settings.getString(PREFS_HOMEPAGE_ID,
+					CONTENT_STARTPAGEID);
+			myInstalledVersion = settings.getString(PREFS_INSTALLED_VERSION,
+					myInstalledVersion);
 			if (LogBridge.isLoggable()) {
-				LogBridge.i(" " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
-				LogBridge.i(" " + PREFS_INSTALLED_VERSION + "=" + myInstalledVersion);
+				LogBridge.i(" " + PREFS_HOMEPAGE_ID + "=" + myHomePageId);
+				LogBridge.i(" " + PREFS_INSTALLED_VERSION + "="
+						+ myInstalledVersion);
 			}
 		}
 	}
@@ -491,17 +526,19 @@ public final class TTActivity extends Activity {
 	private void storePreferences() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Storing preferences");
-		SharedPreferences settings = getSharedPreferences(LOGGING_TAG, MODE_PRIVATE);
+		SharedPreferences settings = getSharedPreferences(LOGGING_TAG,
+				MODE_PRIVATE);
 		if (settings != null) {
 			SharedPreferences.Editor editor = settings.edit();
 			if (editor != null) {
-				editor.putString(PREFS_HOMEPAGE_URL, myHomePageUrl);
+				editor.putString(PREFS_HOMEPAGE_ID, myHomePageId);
 				editor.putString(PREFS_INSTALLED_VERSION, myInstalledVersion);
 				editor.commit();
 			}
 			if (LogBridge.isLoggable()) {
-				LogBridge.i(" " + PREFS_HOMEPAGE_URL + "=" + myHomePageUrl);
-				LogBridge.i(" " + PREFS_INSTALLED_VERSION + "=" + myInstalledVersion);
+				LogBridge.i(" " + PREFS_HOMEPAGE_ID + "=" + myHomePageId);
+				LogBridge.i(" " + PREFS_INSTALLED_VERSION + "="
+						+ myInstalledVersion);
 			}
 		}
 	}
@@ -509,7 +546,7 @@ public final class TTActivity extends Activity {
 	private void resetPreferences() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Resetting preferences");
-		myHomePageUrl = CONTENT_STARTPAGEURL;
+		myHomePageId = CONTENT_STARTPAGEID;
 		myInstalledVersion = DEFAULT_VERSION;
 		storePreferences();
 		Toast.makeText(this, "Preferences reset", Toast.LENGTH_SHORT).show();
@@ -544,8 +581,8 @@ public final class TTActivity extends Activity {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing currentVersion");
 		try {
-			PackageInfo packageInfo = getPackageManager()
-					.getPackageInfo(ATOOMTT_PACKAGE, PackageManager.GET_ACTIVITIES);
+			PackageInfo packageInfo = getPackageManager().getPackageInfo(
+					ATOOMTT_PACKAGE, PackageManager.GET_ACTIVITIES);
 			myCurrentVersion = packageInfo.versionName;
 			if (LogBridge.isLoggable())
 				LogBridge.i("Installed version is " + myCurrentVersion);
@@ -581,12 +618,12 @@ public final class TTActivity extends Activity {
 				if (newPageId.equals("000")) {
 					resetPreferences();
 				} else {
-					if (currentPageId.equals(newPageId)) {
+					if (currentPageId.startsWith(newPageId)) {
 						if (LogBridge.isLoggable())
-							LogBridge.i("Ignoring newPageId " + newPageId + " to prevent recursion");
+							LogBridge.i("Ignoring newPageId " + newPageId
+									+ " to prevent recursion");
 					} else {
-						String newPageUrl = "http://teletekst.nos.nl/tekst/" + newPageId + "-01.html";
-						loadPageUrl(newPageUrl, true);
+						loadPageUrl(newPageId, true);
 					}
 					myPageEditText.clearFocus();
 				}
@@ -594,14 +631,17 @@ public final class TTActivity extends Activity {
 				// close soft keyboard
 				InputMethodManager inputManager = (InputMethodManager) TTActivity.this
 						.getSystemService(Context.INPUT_METHOD_SERVICE);
-				inputManager.hideSoftInputFromWindow(myPageEditText.getWindowToken(),
+				inputManager.hideSoftInputFromWindow(
+						myPageEditText.getWindowToken(),
 						InputMethodManager.HIDE_NOT_ALWAYS);
 			}
 
-			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
 			}
 
-			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			public void onTextChanged(CharSequence s, int start, int before,
+					int count) {
 			}
 
 		});
@@ -618,61 +658,65 @@ public final class TTActivity extends Activity {
 		myHomeButton = (Button) findViewById(R.id.homebuttonview);
 		myHomeButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				loadPageUrl(myHomePageUrl, true);
+				loadPageUrl(myHomePageId, true);
 			}
 		});
 		myNextPageButton = (Button) findViewById(R.id.nextpagebuttonview);
 		myNextPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !pageEntity.getNextPageUrl().equals(""))
-					loadPageUrl(pageEntity.getNextPageUrl(), true);
+				if (pageEntity != null
+						&& !pageEntity.getNextPageId().equals(""))
+					loadPageUrl(pageEntity.getNextPageId(), true);
 			}
 		});
 		myNextSubPageButton = (Button) findViewById(R.id.nextsubbuttonview);
 		myNextSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !pageEntity.getNextSubPageUrl().equals(""))
-					loadPageUrl(pageEntity.getNextSubPageUrl(), true);
+				if (pageEntity != null
+						&& !pageEntity.getNextSubPageId().equals(""))
+					loadPageUrl(pageEntity.getNextSubPageId(), true);
 			}
 		});
 		myPrevPageButton = (Button) findViewById(R.id.prevpagebuttonview);
 		myPrevPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !pageEntity.getPrevPageUrl().equals(""))
-					loadPageUrl(pageEntity.getPrevPageUrl(), true);
+				if (pageEntity != null
+						&& !pageEntity.getPrevPageId().equals(""))
+					loadPageUrl(pageEntity.getPrevPageId(), true);
 			}
 		});
 		myPrevSubPageButton = (Button) findViewById(R.id.prevsubbuttonview);
 		myPrevSubPageButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				PageEntity pageEntity = myCurrentPageEntity;
-				if (pageEntity != null && !pageEntity.getPrevSubPageUrl().equals(""))
-					loadPageUrl(pageEntity.getPrevSubPageUrl(), true);
+				if (pageEntity != null
+						&& !pageEntity.getPrevSubPageId().equals(""))
+					loadPageUrl(pageEntity.getPrevSubPageId(), true);
 			}
 		});
 	}
 
 	private void updateButtons(PageEntity pageEntity) {
-		if (pageEntity.getPageUrl().equals(myHomePageUrl))
+		if (pageEntity.getPageId().equals("100-01")) // FIXME
 			disableButton(myHomeButton);
 		else
 			enableButton(myHomeButton);
-		if (pageEntity.getNextPageId().equals(""))
+		if (isEmpty(pageEntity.getNextPageId()))
 			disableButton(myNextPageButton);
 		else
 			enableButton(myNextPageButton);
-		if (pageEntity.getNextSubPageId().equals(""))
+		if (isEmpty(pageEntity.getNextSubPageId()))
 			disableButton(myNextSubPageButton);
 		else
 			enableButton(myNextSubPageButton);
-		if (pageEntity.getPrevPageId().equals(""))
+		if (isEmpty(pageEntity.getPrevPageId()))
 			disableButton(myPrevPageButton);
 		else
 			enableButton(myPrevPageButton);
-		if (pageEntity.getPrevSubPageId().equals(""))
+		if (isEmpty(pageEntity.getPrevSubPageId()))
 			disableButton(myPrevSubPageButton);
 		else
 			enableButton(myPrevSubPageButton);
@@ -686,5 +730,9 @@ public final class TTActivity extends Activity {
 	private void disableButton(final Button button) {
 		button.setEnabled(false);
 		button.setFocusable(false);
+	}
+
+	private boolean isEmpty(final String string) {
+		return string == null || string.equals("");
 	}
 }
