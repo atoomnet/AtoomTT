@@ -36,7 +36,7 @@ import net.atoom.android.tt2.util.PageIdUtil;
 public final class PageLoader {
 
 	private final static int CACHE_SIZE = 100;
-	private final static long CACHE_TIME = 30000;
+	private final static long CACHE_TIME = 60000;
 
 	private final static String[] FTL_CLASS = new String[] { "red", "lime",
 			"yellow", "aqua" };

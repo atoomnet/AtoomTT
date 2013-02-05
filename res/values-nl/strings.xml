@@ -14,10 +14,10 @@
     <string name="dialog_title">Atoom TeleTEKST</string>
     <string name="dialog_about_ok">Verder</string>
     <string name="dialog_about_donate">Doneer</string>
-    <string name="dialog_about_text">Atoom TeleTEKST is een onofficiele gratis retro style tekst gebaseerde browser voor NOS
+    <string name="dialog_about_text">Atoom TeleTEKST is een onofficiele gratis tekst gebaseerde browser voor NOS
 		teletekst.\n\nSteun deze gratis app met slechts €0.99! Als dank zullen we je geen reclame banners meer tonen.\n\nVoor
 		meer informatie, code en verzoekjes zie:\nhttps://github.com/atoomnet/AtoomTT</string>
-    <string name="dialog_about_text_noads">Atoom TeleTEKST is een gratis onofficiele gratis retro style tekst gebaseerde browser voor NOS
+    <string name="dialog_about_text_noads">Atoom TeleTEKST is een gratis, onofficiele, gratis, tekst gebaseerde browser voor NOS
 		teletekst.\n\nVoor meer informatie, code en verzoekjes zie:\nhttps://github.com/atoomnet/AtoomTT</string>
 
 </resources>

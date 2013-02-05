@@ -68,6 +68,7 @@ public final class TTActivity extends Activity {
 	private static final String PREFS_HOMEPAGE_ID = "homepageId";
 	private static final String PREFS_INSTALLED_VERSION = "installedVersion";
 
+	private static final String WELCOME_FILENAME = "welcome.html";
 	private static final String TEMPLATE_FILENAME = "template.html";
 	private static final String TEMPLATE_PLACEHOLDER = "[pageContent]";
 
@@ -140,8 +141,12 @@ public final class TTActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		isStopped = false;
-		handleShowWelcome();
-		loadPageUrl(myHomePageId, true);
+
+		if (handleShowWelcome()) {
+			myMainWebViewAnimator.updateWebView(loadWelcome());
+		} else {
+			loadPageUrl(myHomePageId, true);
+		}
 	}
 
 	@Override
@@ -219,10 +224,8 @@ public final class TTActivity extends Activity {
 							myHandler.post(new Runnable() {
 								@Override
 								public void run() {
-									Toast.makeText(
-											getApplicationContext(),
-											R.string.toast_pagenotfound
-													+ pageId,
+									Toast.makeText(getApplicationContext(),
+											R.string.toast_pagenotfound,
 											Toast.LENGTH_SHORT).show();
 								}
 							});
@@ -372,12 +375,14 @@ public final class TTActivity extends Activity {
 		return true;
 	}
 
-	private void handleShowWelcome() {
+	private boolean handleShowWelcome() {
 		if (!myInstalledVersion.equals(myCurrentVersion)) {
 			myInstalledVersion = myCurrentVersion;
 			storePreferences();
 			showDialog(DIALOG_ABOUT_ID);
+			return true;
 		}
+		return false;
 	}
 
 	// location
@@ -575,6 +580,30 @@ public final class TTActivity extends Activity {
 				}
 			}
 		}
+	}
+
+	private String loadWelcome() {
+		InputStream is = null;
+		try {
+			is = getAssets().open(WELCOME_FILENAME);
+			InputStreamReader isr = new InputStreamReader(is);
+			BufferedReader br = new BufferedReader(isr);
+			StringBuilder sb = new StringBuilder(500);
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+				sb.append("\n");
+			}
+			return sb.toString();
+		} catch (IOException e) {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e1) {
+				}
+			}
+		}
+		return "";
 	}
 
 	private void loadCurrentVersion() {
