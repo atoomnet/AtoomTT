@@ -133,7 +133,7 @@ public final class TTActivity extends Activity {
 		initWebView();
 
 		loadCurrentVersion();
-		initLocationTracking();
+		// initLocationTracking();
 		initAdvertising();
 	}
 
@@ -142,8 +142,10 @@ public final class TTActivity extends Activity {
 		super.onStart();
 		isStopped = false;
 
+		myMainWebViewAnimator.updateWebView(myTemplate);
+		// myMainWebViewAnimator.getWebView().loadUrl("javascript:drawNow1()");
+
 		if (handleShowWelcome()) {
-			myMainWebViewAnimator.updateWebView(loadWelcome());
 		} else {
 			loadPageUrl(myHomePageId, true);
 		}
@@ -447,9 +449,11 @@ public final class TTActivity extends Activity {
 	}
 
 	private void updateWebView(PageEntity pageEntity) {
-		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER,
-				pageEntity.getHtmlData());
-		myMainWebViewAnimator.updateWebView(htmlData);
+		myMainWebViewAnimator.getWebView().loadUrl(
+				"javascript:drawTT(" + pageEntity.getHtmlData() + ")");
+		// String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER,
+		// pageEntity.getHtmlData());
+		// myMainWebViewAnimator.updateWebView(htmlData);
 	}
 
 	// ads

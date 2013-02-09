@@ -44,6 +44,10 @@ public class MainWebViewAnimator extends ViewAnimator {
 		initWebView();
 		addView(myWebView);
 	}
+	
+	public WebView getWebView(){
+		return myWebView;
+	}
 
 	public void updateWebView(final String htmlData) {
 		myWebView.loadDataWithBaseURL(CONTENT_BASEURL, htmlData,
@@ -74,7 +78,7 @@ public class MainWebViewAnimator extends ViewAnimator {
 		WebSettings webSettings = myWebView.getSettings();
 		webSettings.setSavePassword(false);
 		webSettings.setSaveFormData(false);
-		webSettings.setJavaScriptEnabled(false);
+		webSettings.setJavaScriptEnabled(true);
 		webSettings.setSupportZoom(false);
 		webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 	}

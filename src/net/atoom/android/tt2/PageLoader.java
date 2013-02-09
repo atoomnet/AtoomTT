@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import net.atoom.android.tt2.util.LRUCache;
 import net.atoom.android.tt2.util.LogBridge;
@@ -38,15 +36,6 @@ public final class PageLoader {
 	private final static int CACHE_SIZE = 100;
 	private final static long CACHE_TIME = 60000;
 
-	private final static String[] FTL_CLASS = new String[] { "red", "lime",
-			"yellow", "aqua" };
-
-	private final Pattern PATTERN_PAGELINK = Pattern
-			.compile("((?<=[\\s+\\+,-]|^)(\\d{3}/\\d{1,2}(?=[\\s+\\+,-]|$))|((?<=[\\s+\\+,-]|^)\\d{3}(?=[\\s+\\+,-]|$)))");
-
-	private final Pattern PATTERN_FASTTEKST = Pattern
-			.compile("([^\\s]+\\s?[^\\s]+)");
-
 	private final long REQUEST_ID = System.currentTimeMillis();
 
 	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(
@@ -54,6 +43,10 @@ public final class PageLoader {
 
 	private final PriorityBlockingQueue<PageLoadRequest> myLoadRequests;
 	private final ExecutorService myExecutorService;
+
+	private final StringBuilder stringBuilder = new StringBuilder();
+	private final List<String> fastTekstLinks = new LinkedList<String>();
+	private final byte[] readBuffer = new byte[2048];
 
 	public PageLoader() {
 		myLoadRequests = new PriorityBlockingQueue<PageLoadRequest>();
@@ -120,11 +113,8 @@ public final class PageLoader {
 			return null;
 		}
 
-		final List<String> lines = readPageURL(pageUrl);
-		if (lines == null)
-			return null;
-
-		pageEntity = createEntity(pageId, lines);
+		final byte[] bytes = readPage(pageUrl);
+		pageEntity = createEntity(pageId, bytes);
 		if (pageEntity == null)
 			return null;
 
@@ -136,107 +126,70 @@ public final class PageLoader {
 		return pageEntity;
 	}
 
-	private PageEntity createEntity(final String pageId,
-			final List<String> lines) {
+	private PageEntity createEntity(final String pageId, final byte[] bytes) {
 
 		final PageEntity pageEntity = new PageEntity(pageId);
-		final List<String> ftl = new LinkedList<String>();
-		final StringBuffer sb = new StringBuffer();
+		fastTekstLinks.clear();
+		stringBuilder.setLength(0);
 
-		for (int i = 0; i < lines.size(); i++) {
-			String line = lines.get(i).trim();
-			line = line.replace("<pre>", "");
-			line = line.replace("</pre>", "");
-			if (line.startsWith("pn=p_")) {
-				pageEntity.setPrevPageId(line.replace("pn=p_", ""));
-			} else if (line.startsWith("pn=n_")) {
-				pageEntity.setNextPageId(line.replace("pn=n_", ""));
-			} else if (line.startsWith("pn=ps")) {
-				pageEntity.setPrevSubPageId(line.replace("pn=ps", ""));
-			} else if (line.startsWith("pn=ns")) {
-				pageEntity.setNextSubPageId(line.replace("pn=ns", ""));
-			} else if (line.startsWith("ftl=")) {
-				ftl.add(line.replace("ftl=", ""));
-			} else {
-				if (i < (lines.size() - 1)) {
-					final Matcher m = PATTERN_PAGELINK.matcher(line);
-					while (m.find()) {
-						m.appendReplacement(
-								sb,
-								"<a href=\""
-										+ PageIdUtil.toInternalLink(m.group(1))
-										+ "\">" + m.group(1) + "</a>");
-					}
-					m.appendTail(sb);
-				} else {
-					sb.append("\n  ");
-					Matcher m = PATTERN_FASTTEKST.matcher(line);
-					int ftlIndex = 0;
-					while (m.find() && ftlIndex < 4) {
-						if (ftlIndex < ftl.size()) {
-							m.appendReplacement(
-									sb,
-									"<a class=\""
-											+ FTL_CLASS[ftlIndex]
-											+ "\" href=\""
-											+ PageIdUtil.toInternalLink(ftl
-													.get(ftlIndex++)) + "\">"
-											+ m.group(1) + "</a>");
-						} else {
-							m.appendReplacement(sb, m.group(1));
-						}
-					}
-					m.appendTail(sb);
+		int mark = 0;
+		for (int i = 0; i < bytes.length; i++) {
+
+			if (i == bytes.length - 1) {
+				stringBuilder.append("[");
+				for (int j = mark + 5; j < (bytes.length - 6); j++) {
+					stringBuilder.append(bytes[j]);
+					if (j < (bytes.length - 7))
+						stringBuilder.append(",");
 				}
-				sb.append("\n");
+				stringBuilder.append("]");
+				pageEntity.setHtmlData(stringBuilder.toString());
+				break;
+			}
+
+			if (bytes[i] != 10)
+				continue;
+
+			final String line = new String(bytes, mark, i - mark);
+			mark = i + 1;
+			if (line.startsWith("pn=")) {
+				if (line.startsWith("pn=p_")) {
+					pageEntity.setPrevPageId(line.replace("pn=p_", ""));
+				} else if (line.startsWith("pn=n_")) {
+					pageEntity.setNextPageId(line.replace("pn=n_", ""));
+				} else if (line.startsWith("pn=ps")) {
+					pageEntity.setPrevSubPageId(line.replace("pn=ps", ""));
+				} else if (line.startsWith("pn=ns")) {
+					pageEntity.setNextSubPageId(line.replace("pn=ns", ""));
+				}
+			} else if (line.startsWith("ftl=")) {
+				fastTekstLinks.add(line.replace("ftl=", ""));
 			}
 		}
-		pageEntity.setHtmlData(sb.toString());
 		return pageEntity;
 	}
 
-	private List<String> readPageURL(URL url) {
-
-		List<String> lines = null;
-		byte[] bytes = new byte[50];
-		byte[] bytes2 = new byte[2024];
-
-		URLConnection con = null;
-		InputStream is = null;
+	private byte[] readPage(URL url) {
+		URLConnection urlConnection = null;
+		InputStream inputStream = null;
 		try {
-			con = url.openConnection();
-			is = new BufferedInputStream(con.getInputStream());
+			urlConnection = url.openConnection();
+			inputStream = new BufferedInputStream(
+					urlConnection.getInputStream());
+			int byteCount = inputStream.read(readBuffer);
 
-			int index = 0;
-			int index2 = 0;
-			int c = is.read();
-			while (c != -1) {
-				byte b = (byte) c;
-				bytes2[index2++] = b;
-				if (b > 32) {
-					bytes[index++] = b;
-				} else if (index < 39 && b != 10) {
-					bytes[index++] = 32;
-				} else {
-					if (lines == null)
-						lines = new LinkedList<String>();
-					lines.add(new String(bytes));
-					for (int i = 0; i < 50; i++)
-						bytes[i] = 0;
-					index = 0;
-				}
-				c = is.read();
-			}
-			lines.add(new String(bytes));
+			byte[] resultBuffer = new byte[byteCount];
+			System.arraycopy(readBuffer, 0, resultBuffer, 0, byteCount);
+			return resultBuffer;
 		} catch (final IOException e) {
 		} finally {
-			if (is != null) {
+			if (inputStream != null) {
 				try {
-					is.close();
+					inputStream.close();
 				} catch (IOException e) {
 				}
 			}
 		}
-		return lines;
+		return null;
 	}
 }
