@@ -68,7 +68,6 @@ public final class TTActivity extends Activity {
 	private static final String PREFS_HOMEPAGE_ID = "homepageId";
 	private static final String PREFS_INSTALLED_VERSION = "installedVersion";
 
-	private static final String WELCOME_FILENAME = "welcome.html";
 	private static final String TEMPLATE_FILENAME = "template.html";
 	private static final String TEMPLATE_PLACEHOLDER = "[pageContent]";
 
@@ -85,7 +84,6 @@ public final class TTActivity extends Activity {
 	private static final long RELOAD_INTERVAL_MS = 60000;
 	private static final long AD_INIT_DELAY_MS = 3000;
 
-	// app
 	private final PageLoader myPageLoader = new PageLoader();
 	private final Handler myHandler = new Handler();
 	private final BoundStack<PageEntity> myHistoryStack = new BoundStack<PageEntity>(
@@ -98,7 +96,6 @@ public final class TTActivity extends Activity {
 	private int myPageLoadCount = 0;
 	private volatile boolean isStopped = false;
 
-	// ui
 	private MainWebViewAnimator myMainWebViewAnimator = null;
 	private EditText myPageEditText;
 	private Button myHomeButton = null;
@@ -107,7 +104,6 @@ public final class TTActivity extends Activity {
 	private Button myPrevPageButton = null;
 	private Button myPrevSubPageButton = null;
 
-	// location
 	private LocationListener myLocationListener = null;
 	private boolean myAdsEnabled = true;
 	private volatile Location myLocation = null;
@@ -119,7 +115,6 @@ public final class TTActivity extends Activity {
 		myLocation.setTime(System.currentTimeMillis());
 	}
 
-	// lifecycle
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -141,10 +136,6 @@ public final class TTActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		isStopped = false;
-
-		myMainWebViewAnimator.updateWebView(myTemplate);
-		// myMainWebViewAnimator.getWebView().loadUrl("javascript:drawNow1()");
-
 		if (handleShowWelcome()) {
 		} else {
 			loadPageUrl(myHomePageId, true);
@@ -208,7 +199,6 @@ public final class TTActivity extends Activity {
 		return false;
 	}
 
-	// api
 	public synchronized void loadPageUrl(final String pageId,
 			final boolean updateHistory) {
 		if (isStopped) {
@@ -249,20 +239,6 @@ public final class TTActivity extends Activity {
 								updateEditText(pageEntity);
 								updateButtons(pageEntity);
 								updateWebView(pageEntity);
-
-								myPageLoader.loadPage(
-										pageEntity.getNextPageId(),
-										PageLoadPriority.LOW, null);
-								myPageLoader.loadPage(
-										pageEntity.getPrevPageId(),
-										PageLoadPriority.LOW, null);
-								myPageLoader.loadPage(
-										pageEntity.getNextSubPageId(),
-										PageLoadPriority.LOW, null);
-								myPageLoader.loadPage(
-										pageEntity.getPrevPageId(),
-										PageLoadPriority.LOW, null);
-
 								myHandler.postDelayed(new ReloadRunnable(
 										TTActivity.this, myPageLoadCount),
 										RELOAD_INTERVAL_MS);
@@ -355,7 +331,6 @@ public final class TTActivity extends Activity {
 		return builder.create();
 	}
 
-	// handlers
 	private boolean handleBackButton() {
 		if (isStopped)
 			return true;
@@ -387,7 +362,6 @@ public final class TTActivity extends Activity {
 		return false;
 	}
 
-	// location
 	private void initLocationTracking() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing locationlistener");
@@ -428,7 +402,6 @@ public final class TTActivity extends Activity {
 		manager.removeUpdates(locationListener);
 	}
 
-	// graphics
 	private void initGraphics() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing graphics");
@@ -439,7 +412,6 @@ public final class TTActivity extends Activity {
 		setContentView(R.layout.main);
 	}
 
-	// webview
 	private void initWebView() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing webview");
@@ -449,14 +421,11 @@ public final class TTActivity extends Activity {
 	}
 
 	private void updateWebView(PageEntity pageEntity) {
-		myMainWebViewAnimator.getWebView().loadUrl(
-				"javascript:drawTT(" + pageEntity.getHtmlData() + ")");
-		// String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER,
-		// pageEntity.getHtmlData());
-		// myMainWebViewAnimator.updateWebView(htmlData);
+		String htmlData = myTemplate.replace(TEMPLATE_PLACEHOLDER,
+				pageEntity.getHtmlData());
+		myMainWebViewAnimator.updateWebView(htmlData);
 	}
 
-	// ads
 	private void initAdvertising() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initialzing advertising");
@@ -513,7 +482,6 @@ public final class TTActivity extends Activity {
 		adView.setVisibility(View.GONE);
 	}
 
-	// preferences
 	private void loadPreferences() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Loading preferences");
@@ -586,30 +554,6 @@ public final class TTActivity extends Activity {
 		}
 	}
 
-	private String loadWelcome() {
-		InputStream is = null;
-		try {
-			is = getAssets().open(WELCOME_FILENAME);
-			InputStreamReader isr = new InputStreamReader(is);
-			BufferedReader br = new BufferedReader(isr);
-			StringBuilder sb = new StringBuilder(500);
-			String line = null;
-			while ((line = br.readLine()) != null) {
-				sb.append(line);
-				sb.append("\n");
-			}
-			return sb.toString();
-		} catch (IOException e) {
-			if (is != null) {
-				try {
-					is.close();
-				} catch (IOException e1) {
-				}
-			}
-		}
-		return "";
-	}
-
 	private void loadCurrentVersion() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing currentVersion");
@@ -625,7 +569,6 @@ public final class TTActivity extends Activity {
 		}
 	}
 
-	// edittext
 	private void initEditText() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing edittext");
@@ -684,7 +627,6 @@ public final class TTActivity extends Activity {
 		myPageEditText.setText(pageEntity.getPageId());
 	}
 
-	// buttons
 	private void initButtons() {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing buttons");
@@ -733,10 +675,6 @@ public final class TTActivity extends Activity {
 	}
 
 	private void updateButtons(PageEntity pageEntity) {
-		if (pageEntity.getPageId().equals("100-01")) // FIXME
-			disableButton(myHomeButton);
-		else
-			enableButton(myHomeButton);
 		if (isEmpty(pageEntity.getNextPageId()))
 			disableButton(myNextPageButton);
 		else

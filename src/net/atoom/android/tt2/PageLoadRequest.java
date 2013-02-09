@@ -15,18 +15,24 @@
  */
 package net.atoom.android.tt2;
 
-
 class PageLoadRequest implements Comparable<PageLoadRequest> {
 
 	private final String myPageId;
 	private final long myTimestamp;
+	private final boolean myPreload;
 	private final PageLoadPriority myPageLoadPriority;
 	private final PageLoadCompletionHandler myPageLoadCompletionHandler;
 
 	public PageLoadRequest(String pageId, PageLoadPriority pageLoadPriority,
 			PageLoadCompletionHandler pageLoadCompletionHandler) {
+		this(pageId, pageLoadPriority, pageLoadCompletionHandler, true);
+	}
+
+	public PageLoadRequest(String pageId, PageLoadPriority pageLoadPriority,
+			PageLoadCompletionHandler pageLoadCompletionHandler, boolean preload) {
 		myPageId = pageId;
 		myTimestamp = System.currentTimeMillis();
+		myPreload = preload;
 		myPageLoadPriority = pageLoadPriority;
 		myPageLoadCompletionHandler = pageLoadCompletionHandler;
 	}
@@ -41,6 +47,10 @@ class PageLoadRequest implements Comparable<PageLoadRequest> {
 
 	public long getTimestamp() {
 		return myTimestamp;
+	}
+	
+	public boolean isPreload() {
+		return myPreload;
 	}
 
 	public PageLoadCompletionHandler getPageLoadCompletionHandler() {

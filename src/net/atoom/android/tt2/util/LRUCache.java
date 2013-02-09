@@ -41,15 +41,15 @@ public class LRUCache<K, V> {
 		};
 	}
 
-	public synchronized V get(K key) {
+	public V get(K key) {
 		return myMap.get(key);
 	}
 
-	public synchronized void put(K key, V value) {
+	public void put(K key, V value) {
 		myMap.put(key, value);
 	}
 
-	public synchronized void remove(K key) {
+	public void remove(K key) {
 		myMap.remove(key);
 	}
 }

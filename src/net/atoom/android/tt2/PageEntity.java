@@ -15,8 +15,13 @@
  */
 package net.atoom.android.tt2;
 
+import java.util.LinkedList;
+import java.util.List;
 
 public final class PageEntity {
+
+	private final static long CACHE_TIME_LONG = 300000;
+	private final static long CACHE_TIME_SHORT = 60000;
 
 	private String myPageId;
 	private String myHtmlData;
@@ -25,12 +30,16 @@ public final class PageEntity {
 	private String myNextSubPageId;
 	private String myPrevPageId;
 	private String myPrevSubPageId;
+	private List<String> myLinkPageIds = new LinkedList<String>();
 
-	private long myCreated;
+	private long myExpires;
 
 	public PageEntity(final String pageId) {
 		myPageId = pageId;
-		myCreated = System.currentTimeMillis();
+		if (pageId.startsWith("8"))
+			myExpires = System.currentTimeMillis() + CACHE_TIME_SHORT;
+		else
+			myExpires = System.currentTimeMillis() + CACHE_TIME_LONG;
 	}
 
 	public String getPageId() {
@@ -49,12 +58,12 @@ public final class PageEntity {
 		myHtmlData = htmlData;
 	}
 
-	public long getCreated() {
-		return myCreated;
+	public long getExpires() {
+		return myExpires;
 	}
 
-	public void setCreated(final long created) {
-		myCreated = created;
+	public void setExpires(final long expires) {
+		myExpires = expires;
 	}
 
 	public String getNextPageId() {
@@ -87,5 +96,13 @@ public final class PageEntity {
 
 	public void setPrevSubPageId(String prevSubPageId) {
 		myPrevSubPageId = prevSubPageId;
+	}
+
+	public List<String> getLinkedPageIds() {
+		return myLinkPageIds;
+	}
+
+	public void addLinkedPageId(String linkedPageId) {
+		myLinkPageIds.add(linkedPageId);
 	}
 }

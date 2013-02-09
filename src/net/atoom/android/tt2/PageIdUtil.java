@@ -1,8 +1,8 @@
-package net.atoom.android.tt2.util;
+package net.atoom.android.tt2;
 
 public class PageIdUtil {
 
-	private final static String LINK_PREFIX = "http://foo.bar/#";
+	private final static String LINK_PREFIX = "http://f.ba/#";
 
 	public static String normalize(String pageId) {
 		if (pageId == null || "".equals(pageId)) {

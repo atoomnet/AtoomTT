@@ -24,9 +24,6 @@ import android.widget.ViewAnimator;
 
 public class MainWebViewAnimator extends ViewAnimator {
 
-	private static final String CONTENT_STARTPAGEURL = "http://teletekst.nos.nl/tekst/101-01.html";
-	private static final String CONTENT_BASEURL = "http://teletekst.nos.nl/tekst/";
-
 	private static final String CONTENT_MIME_TYPE = "text/html";
 	private static final String CONTENT_ENCODING = "utf-8";
 
@@ -44,14 +41,10 @@ public class MainWebViewAnimator extends ViewAnimator {
 		initWebView();
 		addView(myWebView);
 	}
-	
-	public WebView getWebView(){
-		return myWebView;
-	}
 
 	public void updateWebView(final String htmlData) {
-		myWebView.loadDataWithBaseURL(CONTENT_BASEURL, htmlData,
-				CONTENT_MIME_TYPE, CONTENT_ENCODING, CONTENT_STARTPAGEURL);
+		myWebView.loadDataWithBaseURL("http://foo.bar", htmlData,
+				CONTENT_MIME_TYPE, CONTENT_ENCODING, "http://foo.bar");
 	}
 
 	public void loadNextPage() {
@@ -78,9 +71,8 @@ public class MainWebViewAnimator extends ViewAnimator {
 		WebSettings webSettings = myWebView.getSettings();
 		webSettings.setSavePassword(false);
 		webSettings.setSaveFormData(false);
-		webSettings.setJavaScriptEnabled(true);
+		webSettings.setJavaScriptEnabled(false);
 		webSettings.setSupportZoom(false);
 		webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 	}
-
 }

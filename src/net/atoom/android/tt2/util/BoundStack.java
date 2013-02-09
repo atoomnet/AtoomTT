@@ -27,14 +27,14 @@ public final class BoundStack<T> {
 		myList = new LinkedList<T>();
 	}
 
-	public synchronized void push(T value) {
+	public void push(T value) {
 		myList.addFirst(value);
 		if (myList.size() > myStackSize) {
 			myList.removeLast();
 		}
 	}
 
-	public synchronized T pop() {
+	public T pop() {
 		T value = null;
 		if (myList.size() > 0) {
 			value = myList.getFirst();
@@ -42,8 +42,8 @@ public final class BoundStack<T> {
 		}
 		return value;
 	}
-	
-	public synchronized int size(){
+
+	public int size() {
 		return myList.size();
 	}
 }

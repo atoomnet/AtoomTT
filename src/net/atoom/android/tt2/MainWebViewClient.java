@@ -16,7 +16,6 @@
 package net.atoom.android.tt2;
 
 import net.atoom.android.tt2.util.LogBridge;
-import net.atoom.android.tt2.util.PageIdUtil;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
