@@ -151,26 +151,27 @@ public final class PageProcessor {
 			else
 				mosciacByte = 32;
 
-		boolean lineOptimization = false;
-		if (mosciacByte == 44) {
-			lineOptimization = true;
-			for (int x = 1; x < (40 - state.colIndex); x++) {
-				lineOptimization &= (bytes[byteIndex + x] == mosciacByte);
-				if (!lineOptimization)
-					break;
-			}
+		int lineWidth = 1;
+		if (state.mosaicLining.equals("c")
+				&& (mosciacByte == 32 || mosciacByte == 35 || mosciacByte == 44
+						|| mosciacByte == 47 || mosciacByte == 112
+						|| mosciacByte == 124 || mosciacByte == 127)) {
+			while (bytes[byteIndex + lineWidth] == mosciacByte)
+				lineWidth++;
 		}
 
-		if (lineOptimization) {
-			int width = 40 - state.colIndex;
+		if (lineWidth > 1) {
 			state.htmlBuilder.append("<div class=\"t x" + state.divPosition
-					+ " y" + state.rowIndex + " h1 w" + width + " b"
+					+ " y" + state.rowIndex + " h1 w" + lineWidth + " b"
 					+ state.backColor + " t" + state.textColor + "\" data-m=\""
 					+ mosciacByte + "\"><svg>");
-			state.htmlBuilder.append("<use xlink:href=\"#l"
-					+ state.mosaicLining + "0\" />");
+			if (mosciacByte != 32)
+				state.htmlBuilder.append("<use xlink:href=\"#lc" + mosciacByte
+						+ "\" />");
 			state.htmlBuilder.append("</svg></div>\n");
-			state.skipLine = true;
+
+			state.colIndex += (lineWidth - 1);
+			state.divPosition += lineWidth;
 		} else {
 			state.htmlBuilder.append("<div class=\"t x" + state.divPosition
 					+ " y" + state.rowIndex + " h1 w1" + " b" + state.backColor
