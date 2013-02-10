@@ -54,12 +54,14 @@ public final class PageLoader {
 			return;
 		pageId = PageIdUtil.normalize(pageId);
 
-		PageEntity pageEntity = myPageCache.get(pageId);
+		final PageEntity pageEntity = myPageCache.get(pageId);
 		if (pageEntity != null
 				&& System.currentTimeMillis() < pageEntity.getExpires()) {
+
 			if (LogBridge.isLoggable())
 				LogBridge.i("Returning cached entity: " + pageId);
 			pageLoadCompletionHandler.pageLoadCompleted(pageEntity);
+			preLoadReferencedPages(pageEntity);
 			return;
 		}
 
@@ -70,17 +72,27 @@ public final class PageLoader {
 		myLoadRequests.offer(pageLoadRequest);
 	}
 
-	private void preLoadPage(String pageId) {
+	private void preLoadReferencedPages(final PageEntity pageEntity) {
+		preLoadPage(pageEntity.getNextPageId());
+		preLoadPage(pageEntity.getPrevPageId());
+		preLoadPage(pageEntity.getNextSubPageId());
+		preLoadPage(pageEntity.getPrevSubPageId());
+		for (final String fastLinkPageId : pageEntity.getFastLinkPageIds()) {
+			preLoadPage(fastLinkPageId);
+		}
+		for (final String linkedPageId : pageEntity.getLinkedPageIds()) {
+			preLoadPage(linkedPageId);
+		}
+	}
 
+	private void preLoadPage(String pageId) {
 		if (pageId == null || pageId.equals(""))
 			return;
 		pageId = PageIdUtil.normalize(pageId);
-
-		PageEntity pageEntity = myPageCache.get(pageId);
+		final PageEntity pageEntity = myPageCache.get(pageId);
 		if (pageEntity != null
-				&& System.currentTimeMillis() < pageEntity.getExpires()) {
+				&& System.currentTimeMillis() < pageEntity.getExpires())
 			return;
-		}
 
 		if (LogBridge.isLoggable())
 			LogBridge.i("Scheduling pageload request: " + pageId);
@@ -111,16 +123,7 @@ public final class PageLoader {
 
 		myPageCache.put(pageId, pageEntity);
 		if (preload) {
-			preLoadPage(pageEntity.getNextPageId());
-			preLoadPage(pageEntity.getPrevPageId());
-			preLoadPage(pageEntity.getNextSubPageId());
-			preLoadPage(pageEntity.getPrevSubPageId());
-			for (final String fastLinkPageId : pageEntity.getFastLinkPageIds()) {
-				preLoadPage(fastLinkPageId);
-			}
-			for (final String linkedPageId : pageEntity.getLinkedPageIds()) {
-				preLoadPage(linkedPageId);
-			}
+			preLoadReferencedPages(pageEntity);
 		}
 
 		if (LogBridge.isLoggable())
@@ -142,6 +145,7 @@ public final class PageLoader {
 			System.arraycopy(myReadBuffer, 0, resultBuffer, 0, byteCount);
 			return resultBuffer;
 		} catch (final IOException e) {
+			LogBridge.w("IoException while loading " + pageId);
 			return null;
 		} finally {
 			if (inputStream != null) {
