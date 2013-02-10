@@ -128,7 +128,7 @@ public final class TTActivity extends Activity {
 		initWebView();
 
 		loadCurrentVersion();
-		// initLocationTracking();
+		initLocationTracking();
 		initAdvertising();
 	}
 
@@ -136,10 +136,8 @@ public final class TTActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		isStopped = false;
-		if (handleShowWelcome()) {
-		} else {
-			loadPageUrl(myHomePageId, true);
-		}
+		handleShowWelcome();
+		loadPageUrl(myHomePageId, true);
 	}
 
 	@Override

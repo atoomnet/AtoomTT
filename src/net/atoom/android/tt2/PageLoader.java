@@ -18,7 +18,6 @@ package net.atoom.android.tt2;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.LinkedList;
@@ -34,16 +33,16 @@ import net.atoom.android.tt2.util.LogBridge;
 
 public final class PageLoader {
 
+	private static final String BASE_URL = "http://teletekst-data.nos.nl/page/";
+
 	private final static Pattern PATTERN_PAGELINK = Pattern
 			.compile("((?<=[\\s+\\+,-]|[^\\d]{1}\\.|^)(\\d{3}/\\d{1,2}(?=[\\s+\\+,-]|$))|((?<=[\\s+\\+,-]|[^\\d]{1}\\.|^)\\d{3}(?=[\\s+\\+,-]|$)))");
 
 	private final static Pattern PATTERN_FASTTEKST = Pattern
 			.compile("([^\\s]+.*)");
 
-	private final static int CACHE_SIZE = 100;
-
 	private final LRUCache<String, PageEntity> myPageCache = new LRUCache<String, PageEntity>(
-			CACHE_SIZE);
+			100);
 
 	private final PriorityBlockingQueue<PageLoadRequest> myLoadRequests;
 	private final ExecutorService myExecutorService;
@@ -99,10 +98,8 @@ public final class PageLoader {
 
 		if (LogBridge.isLoggable())
 			LogBridge.i("Scheduling pageload request: " + pageId);
-
 		final PageLoadRequest pageLoadRequest = new PageLoadRequest(pageId,
 				PageLoadPriority.LOW, null, false);
-
 		myLoadRequests.offer(pageLoadRequest);
 	}
 
@@ -118,17 +115,7 @@ public final class PageLoader {
 			myPageCache.remove(pageId);
 		}
 
-		URL pageUrl;
-		try {
-			// pageUrl = new URL("http://teletekst.e-office.com/g/android?p="
-			// + pageId + "&id=" + REQUEST_ID);
-			pageUrl = new URL("http://teletekst-data.nos.nl/page/" + pageId);
-
-		} catch (MalformedURLException e) {
-			return null;
-		}
-
-		final byte[] bytes = readPage(pageUrl);
+		final byte[] bytes = readPage(pageId);
 		if (bytes == null)
 			return null;
 
@@ -158,15 +145,15 @@ public final class PageLoader {
 		myFastTekstLinks.clear();
 
 		int mark = 0;
-		for (int i = 0; i < (bytes.length - 5); i++) {
+		for (int i = 0; i < bytes.length; i++) {
 
-			if (bytes[i] == (byte) 60 && bytes[i + 1] == (byte) 112
-					&& bytes[i + 2] == (byte) 114 && bytes[i + 3] == (byte) 101
-					&& bytes[i + 4] == (byte) 62) { // <pre>
+			if (i < (bytes.length - 5) && bytes[i] == (byte) 60
+					&& bytes[i + 1] == (byte) 112 && bytes[i + 2] == (byte) 114
+					&& bytes[i + 3] == (byte) 101 && bytes[i + 4] == (byte) 62) { // <pre>
 				final String html = buildHtml(pageEntity, bytes, i + 5,
 						myFastTekstLinks);
 				pageEntity.setHtmlData(html);
-				break;
+				return pageEntity;
 			}
 
 			if (bytes[i] != 10) {
@@ -175,21 +162,19 @@ public final class PageLoader {
 
 			final String line = new String(bytes, mark, i - mark);
 			mark = i + 1;
-			if (line.startsWith("pn=")) {
-				if (line.startsWith("pn=p_")) {
-					pageEntity.setPrevPageId(line.replace("pn=p_", ""));
-				} else if (line.startsWith("pn=n_")) {
-					pageEntity.setNextPageId(line.replace("pn=n_", ""));
-				} else if (line.startsWith("pn=ps")) {
-					pageEntity.setPrevSubPageId(line.replace("pn=ps", ""));
-				} else if (line.startsWith("pn=ns")) {
-					pageEntity.setNextSubPageId(line.replace("pn=ns", ""));
-				}
+			if (line.startsWith("pn=p_")) {
+				pageEntity.setPrevPageId(line.replace("pn=p_", ""));
+			} else if (line.startsWith("pn=n_")) {
+				pageEntity.setNextPageId(line.replace("pn=n_", ""));
+			} else if (line.startsWith("pn=ps")) {
+				pageEntity.setPrevSubPageId(line.replace("pn=ps", ""));
+			} else if (line.startsWith("pn=ns")) {
+				pageEntity.setNextSubPageId(line.replace("pn=ns", ""));
 			} else if (line.startsWith("ftl=")) {
 				myFastTekstLinks.add(line.replace("ftl=", ""));
 			}
 		}
-		return pageEntity;
+		return null;
 	}
 
 	private String buildHtml(final PageEntity pageEntity, final byte[] bytes,
@@ -198,62 +183,65 @@ public final class PageLoader {
 		myHtmlBuilder.setLength(0);
 		for (int row = 0; row < 25; row++) {
 
-			String bgcolor = "bl";
-			String color = "w";
+			String backColor = "bl";
+			String textColor = "w";
 			String lining = "c";
 			byte hold = 0;
-			int mode = 0;
 			int divx = 0;
-			boolean dsize = false;
+
+			boolean textMode = true;
+			boolean doubleSize = false;
 
 			myDivBuilder.setLength(0);
 			for (int col = 0; col < 40; col++) {
 
-				final int i = (row * 40) + col;
-				final byte b = bytes[offset + i];
+				final int byteIndex = (row * 40) + col + offset;
+				final byte currentByte = bytes[byteIndex];
 
-				switch (b) {
+				switch (currentByte) {
 				case 12:
-					dsize = false;
+					doubleSize = false;
 					break;
 				case 13:
-					dsize = true;
+					doubleSize = true;
 					break;
 				case 30:
-					hold = bytes[offset + i - 1];
+					hold = bytes[byteIndex - 1];
 					break;
 				case 31:
 					hold = 0;
 					break;
+				case 127:
+					textMode = false;
+					break;
 				}
 
-				if (mode == 0) { // text
+				if (textMode) { // text
 
 					String s;
-					if (b > 32) {
-						s = String.valueOf((char) b);
+					if (currentByte > 32) {
+						s = String.valueOf((char) currentByte);
 					} else {
 						s = " ";
 					}
 					myDivBuilder.append(s);
 
-					if (b < 32 || col == 39) {
+					if (currentByte < 32 || col == 39) {
 
 						final String line = myDivBuilder.toString();
 						myDivBuilder.setLength(0);
 
-						if (dsize) {
+						if (doubleSize) {
 							myHtmlBuilder.append("<div class=\"t1 x" + divx
 									+ " y" + row + " h2 w" + line.length()
-									+ " b" + bgcolor + " t" + color
-									+ "\" data-m=\"" + b + "\">");
+									+ " b" + backColor + " t" + textColor
+									+ "\" data-m=\"" + currentByte + "\">");
 
 						} else {
 							myHtmlBuilder.append("<div class=\"t x" + divx
 									+ " y" + row + " h1 w" + line.length()
-									+ " b" + bgcolor + " t" + color
-									+ "\" data-m=\"" + b + "\">");
-
+									+ " b" + backColor + " t" + textColor
+									+ "\" data-m=\"" + currentByte + "\">");
 						}
 
 						if (row == 24) {
@@ -280,7 +268,7 @@ public final class PageLoader {
 								if (link.startsWith("147")
 										|| link.startsWith("199"))
 									continue;
-								
+
 								pageEntity.addLinkedPageId(link);
 								myPageLinkMatcher.appendReplacement(
 										myHtmlBuilder,
@@ -300,109 +288,128 @@ public final class PageLoader {
 				} else {
 
 					byte m = 32;
-					if (b < 32) {
+					if (currentByte < 32) {
 						if (hold > 0) {
 							m = hold;
 						}
 					} else {
-						m = b;
+						m = currentByte;
 					}
 
-					myHtmlBuilder.append("<div class=\"t x" + divx + " y" + row
-							+ " h1 w1" + " b" + bgcolor + " t" + color
-							+ "\" data-m=\"" + m + "\"><svg>");
-					for (int bit = 0; bit < 5; bit++) {
-						if ((m & (1 << bit)) != 0)
+					boolean line = false;
+					if (m == 44) {
+						line = true;
+						for (int x = 1; x < (40 - col); x++) {
+							line &= (bytes[byteIndex + x] == m);
+							if (!line)
+								break;
+						}
+					}
+
+					if (line) {
+						int width = 40 - col;
+						myHtmlBuilder.append("<div class=\"t x" + divx + " y"
+								+ row + " h1 w" + width + " b" + backColor
+								+ " t" + textColor + "\" data-m=\"" + m
+								+ "\"><svg>");
+						myHtmlBuilder.append("<use xlink:href=\"#l" + lining
+								+ "0\" />");
+						myHtmlBuilder.append("</svg></div>\n");
+						col = 40;
+					} else {
+						myHtmlBuilder.append("<div class=\"t x" + divx + " y"
+								+ row + " h1 w1" + " b" + backColor + " t"
+								+ textColor + "\" data-m=\"" + m + "\"><svg>");
+						for (int bit = 0; bit < 5; bit++) {
+							if ((m & (1 << bit)) != 0)
+								myHtmlBuilder.append("<use xlink:href=\"#p"
+										+ lining + bit + "\" />");
+						}
+						if ((m & (1 << 6)) != 0)
 							myHtmlBuilder.append("<use xlink:href=\"#p"
-									+ lining + bit + "\" />");
+									+ lining + "5\" />");
+						myHtmlBuilder.append("</svg></div>\n");
+						divx++;
 					}
-					if ((m & (1 << 6)) != 0)
-						myHtmlBuilder.append("<use xlink:href=\"#p" + lining
-								+ "5\" />");
-
-					// myHtmlBuilder.append("<svg><use xlink:href=\"#m" + lining
-					// + m + "\"></svg>");
-					myHtmlBuilder.append("</svg></div>\n");
-					divx++;
 				}
 
-				switch (b) {
+				switch (currentByte) {
 				case 0:
-					mode = 0;
-					color = "bl";
+					textMode = true;
+					textColor = "bl";
 					break;
 				case 1:
-					mode = 0;
-					color = "r";
+					textMode = true;
+					textColor = "r";
 					break;
 				case 2:
-					mode = 0;
-					color = "g";
+					textMode = true;
+					textColor = "g";
 					break;
 				case 3:
-					mode = 0;
-					color = "y";
+					textMode = true;
+					textColor = "y";
 					break;
 				case 4:
-					mode = 0;
-					color = "b";
+					textMode = true;
+					textColor = "b";
 					break;
 				case 5:
-					mode = 0;
-					color = "m";
+					textMode = true;
+					textColor = "m";
 					break;
 				case 6:
-					mode = 0;
-					color = "c";
+					textMode = true;
+					textColor = "c";
 					break;
 				case 7:
-					mode = 0;
-					color = "w";
+					textMode = true;
+					textColor = "w";
 					break;
 				case 16:
-					mode = 1;
-					color = "bl";
+					textMode = false;
+					textColor = "bl";
 					break;
 				case 17:
-					mode = 1;
-					color = "r";
+					textMode = false;
+					textColor = "r";
 					break;
 				case 18:
-					mode = 1;
-					color = "g";
+					textMode = false;
+					textColor = "g";
 					break;
 				case 19:
-					mode = 1;
-					color = "y";
+					textMode = false;
+					textColor = "y";
 					break;
 				case 20:
-					mode = 1;
-					color = "b";
+					textMode = false;
+					textColor = "b";
 					break;
 				case 21:
-					mode = 1;
-					color = "m";
+					textMode = false;
+					textColor = "m";
 					break;
 				case 22:
-					mode = 1;
-					color = "c";
+					textMode = false;
+					textColor = "c";
 					break;
 				case 23:
-					mode = 1;
-					color = "w";
+					textMode = false;
+					textColor = "w";
 					break;
 				case 25:
 					lining = "c";
 					break;
 				case 26:
 					lining = "s";
-					color = "w";
+					textColor = "w";
 					break;
 				case 28:
-					bgcolor = "bl";
+					backColor = "bl";
 					break;
 				case 29:
-					bgcolor = color;
+					backColor = textColor;
 					break;
 				}
 			}
@@ -410,11 +417,12 @@ public final class PageLoader {
 		return myHtmlBuilder.toString();
 	}
 
-	private byte[] readPage(final URL url) {
+	private byte[] readPage(final String pageId) {
 		URLConnection urlConnection = null;
 		InputStream inputStream = null;
 		try {
-			urlConnection = url.openConnection();
+			URL pageUrl = new URL(BASE_URL + pageId);
+			urlConnection = pageUrl.openConnection();
 			inputStream = new BufferedInputStream(
 					urlConnection.getInputStream());
 			int byteCount = inputStream.read(myReadBuffer);
@@ -423,6 +431,7 @@ public final class PageLoader {
 			System.arraycopy(myReadBuffer, 0, resultBuffer, 0, byteCount);
 			return resultBuffer;
 		} catch (final IOException e) {
+			return null;
 		} finally {
 			if (inputStream != null) {
 				try {
@@ -431,7 +440,6 @@ public final class PageLoader {
 				}
 			}
 		}
-		return null;
 	}
 
 	private class PageLoadRunner implements Runnable {
