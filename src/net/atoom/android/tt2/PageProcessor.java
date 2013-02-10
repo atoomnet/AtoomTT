@@ -135,6 +135,16 @@ public final class PageProcessor {
 			final byte[] bytes, final int byteIndex, final VideoTextState state) {
 
 		byte mosciacByte = bytes[byteIndex];
+
+		if (mosciacByte > 64 && mosciacByte < 96) {
+			state.htmlBuilder.append("<div class=\"t x" + state.divPosition
+					+ " y" + state.rowIndex + " h1 w1" + " b" + state.backColor
+					+ " t" + state.textColor + "\" data-m=\"" + mosciacByte
+					+ "\">" + String.valueOf((char) mosciacByte) + "</div>");
+			state.divPosition++;
+			return;
+		}
+
 		if (mosciacByte < 32)
 			if (state.holdMosaic > 0)
 				mosciacByte = state.holdMosaic;
