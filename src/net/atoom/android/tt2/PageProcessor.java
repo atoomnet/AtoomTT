@@ -260,9 +260,6 @@ public final class PageProcessor {
 		case 31:
 			state.holdMosaic = 0;
 			break;
-		case 127:
-			state.textMode = false;
-			break;
 		}
 	}
 
@@ -355,6 +352,8 @@ public final class PageProcessor {
 			return "ü";
 		case -10:
 			return "ö";
+		case 127:
+			return " ";
 		default:
 			if (b < 32)
 				return " ";
