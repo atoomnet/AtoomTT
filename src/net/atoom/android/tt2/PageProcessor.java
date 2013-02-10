@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public final class PageProcessor {
 
 	private final static Pattern PATTERN_PAGELINK = Pattern
-			.compile("((?<=[\\s+\\+,-]|[^\\d]{1}\\.|^)(\\d{3}/\\d{1,2}(?=[\\s+\\+,-]|$))|((?<=[\\s+\\+,-]|[^\\d]{1}\\.|^)\\d{3}(?=[\\s+\\+,-]|$)))");
+			.compile("((?<=[\\s]|\\d{3}[+\\+-]|[^\\d]{1}[\\.,]|^)\\d{3}(/\\d{1,2})?(?=[\\s]|[\\+,-]{3}|$))");
 
 	private final static Pattern PATTERN_FASTTEKST = Pattern
 			.compile("([^\\s]+.*)");
