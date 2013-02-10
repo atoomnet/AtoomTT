@@ -140,7 +140,7 @@ public final class PageProcessor {
 			state.htmlBuilder.append("<div class=\"t x" + state.divPosition
 					+ " y" + state.rowIndex + " h1 w1" + " b" + state.backColor
 					+ " t" + state.textColor + "\" data-m=\"" + mosciacByte
-					+ "\">" + String.valueOf((char) mosciacByte) + "</div>");
+					+ "\">" + byteToString(mosciacByte) + "</div>");
 			state.divPosition++;
 			return;
 		}
@@ -192,9 +192,7 @@ public final class PageProcessor {
 	private void processTextByte(final PageEntity pageEntity,
 			final byte[] bytes, final int byteIndex, final VideoTextState state) {
 
-		String text = " ";
-		if (bytes[byteIndex] > 32)
-			text = String.valueOf((char) bytes[byteIndex]);
+		final String text = byteToString(bytes[byteIndex]);
 		state.divBuilder.append(text);
 
 		if (bytes[byteIndex] >= 32 && state.colIndex < 39)
@@ -346,6 +344,17 @@ public final class PageProcessor {
 		case 29:
 			state.backColor = state.textColor;
 			break;
+		}
+	}
+
+	private String byteToString(final byte b) {
+		switch (b) {
+		case -4:
+			return "ü";
+		default:
+			if (b < 32)
+				return " ";
+			return String.valueOf((char) b);
 		}
 	}
 }
