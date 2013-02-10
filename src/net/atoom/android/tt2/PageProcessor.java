@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public final class PageProcessor {
 
 	private final static Pattern PATTERN_PAGELINK = Pattern
-			.compile("((?<=[\\s]|\\d{3}[+\\+-]|[^\\d]{1}[\\.,]|^)\\d{3}(/\\d{1,2})?(?=[\\s]|[\\+,-]{3}|$))");
+			.compile("((?<=[\\s]|\\d{3}[\\+-]|[^\\d]{1}[\\.,]|^)\\d{3}(/\\d{1,2})?(?=[\\s]|[\\+,-]\\d{3}|$))");
 
 	private final static Pattern PATTERN_FASTTEKST = Pattern
 			.compile("([^\\s]+.*)");
@@ -33,7 +33,7 @@ public final class PageProcessor {
 		if (videoTextIndex == -1)
 			return null;
 
-		processVideoText(pageEntity, bytes, videoTextIndex);
+		processVideoText(pageEntity, bytes, videoTextIndex + 40);
 		return pageEntity;
 	}
 
@@ -115,7 +115,8 @@ public final class PageProcessor {
 
 		final VideoTextState state = myVideoTextState; // reuse
 		state.reset();
-		for (state.rowIndex = 0; state.rowIndex < 25; state.rowIndex++) {
+		for (state.rowIndex = 0; state.rowIndex < 24; state.rowIndex++) {
+
 			state.nextLine();
 			for (state.colIndex = 0; state.colIndex < 40 && !state.skipLine; state.colIndex++) {
 				final int byteIndex = (state.rowIndex * 40) + state.colIndex
@@ -214,7 +215,7 @@ public final class PageProcessor {
 					+ state.backColor + " t" + state.textColor + "\" data-m=\""
 					+ bytes[byteIndex] + "\">");
 
-		if (state.rowIndex == 24) {
+		if (state.rowIndex == 23) {
 			state.fastLinkMatcher.reset(line);
 			if (state.fastLinkMatcher.find()
 					&& pageEntity.getFastLinkPageIds().size() > state.fastLinkPosition) {
