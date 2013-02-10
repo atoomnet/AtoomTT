@@ -196,7 +196,8 @@ public final class PageProcessor {
 		final String text = byteToString(bytes[byteIndex]);
 		state.divBuilder.append(text);
 
-		if (bytes[byteIndex] >= 32 && state.colIndex < 39)
+		if ((bytes[byteIndex] < 0 || bytes[byteIndex] >= 32)
+				&& state.colIndex < 39)
 			return;
 
 		final String line = state.divBuilder.toString();
@@ -352,6 +353,8 @@ public final class PageProcessor {
 		switch (b) {
 		case -4:
 			return "ü";
+		case -10:
+			return "ö";
 		default:
 			if (b < 32)
 				return " ";
