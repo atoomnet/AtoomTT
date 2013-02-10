@@ -30,6 +30,8 @@ public final class PageEntity {
 	private String myNextSubPageId;
 	private String myPrevPageId;
 	private String myPrevSubPageId;
+
+	private List<String> myFastLinkPageIds = new LinkedList<String>();
 	private List<String> myLinkPageIds = new LinkedList<String>();
 
 	private long myExpires;
@@ -96,6 +98,14 @@ public final class PageEntity {
 
 	public void setPrevSubPageId(String prevSubPageId) {
 		myPrevSubPageId = prevSubPageId;
+	}
+
+	public List<String> getFastLinkPageIds() {
+		return myFastLinkPageIds;
+	}
+
+	public void addFastLinkPageId(String fastPageId) {
+		myFastLinkPageIds.add(fastPageId);
 	}
 
 	public List<String> getLinkedPageIds() {
