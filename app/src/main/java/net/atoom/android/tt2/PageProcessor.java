@@ -350,9 +350,9 @@ public final class PageProcessor {
 	private String byteToString(final byte b) {
 		switch (b) {
 		case -4:
-			return "ü";
+			return "o";
 		case -10:
-			return "ö";
+			return "u";
 		case 127:
 			return " ";
 		default:

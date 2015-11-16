@@ -1,7 +1,6 @@
-build.xml
-gen
-bin
-.classpath
-.project
-.settings
-target
+/.gradle/
+/.idea/
+/local.properties
+**/build/
+**/*.keystore
+/atoomtt.env
