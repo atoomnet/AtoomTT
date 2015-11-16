@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:ads="http://schemas.android.com/apk/res-auto"
 	android:id="@+id/main" android:orientation="vertical" android:layout_height="fill_parent" android:layout_width="fill_parent"
 	android:color="#000000" android:keepScreenOn="true">
-	<com.google.ads.AdView android:id="@+id/ad" android:layout_width="fill_parent" android:color="#000"
-		android:layout_height="50dip" ads:adUnitId="a14a8b0dc2dff57" ads:adSize="BANNER" />
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/ad"
+        android:layout_width="fill_parent"
+        android:layout_height="50dip"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        ads:adSize="BANNER"
+        ads:adUnitId="@string/banner_ad_unit_id">
+    </com.google.android.gms.ads.AdView>
 	<FrameLayout android:layout_marginTop="10dip" android:layout_marginBottom="40dip" android:id="@+id/webview"
 		android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_weight="0" />
 	<RelativeLayout android:layout_marginTop="-40dip" android:gravity="center_horizontal"

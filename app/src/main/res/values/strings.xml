@@ -20,4 +20,5 @@
 	<string name="dialog_about_text_noads">Atoom TeleTEXT is an unofficial retro style text based browser for the teletext service provided
 		by the Dutch Broadcasting Association (NOS)\n\nMore info, code and feedback:\nhttps://github.com/atoomnet/AtoomTT
 	</string>
+    <string name="banner_ad_unit_id">ca-app-pub-9604146370503990/9201901061</string>
 </resources>

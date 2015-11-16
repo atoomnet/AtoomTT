@@ -53,8 +53,8 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.ads.AdRequest;
-import com.google.ads.AdView;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 
 public final class TTActivity extends Activity {
 
@@ -454,8 +454,12 @@ public final class TTActivity extends Activity {
 		if (LogBridge.isLoggable())
 			LogBridge.i("Initializing adview");
 		AdView adView = (AdView) findViewById(R.id.ad);
-		AdRequest adRequest = new AdRequest();
-		adRequest.setLocation(myLocation);
+        AdRequest adRequest = new AdRequest.Builder()
+                .setGender(com.google.ads.AdRequest.Gender.MALE.ordinal())
+                .setLocation(myLocation)
+                .addTestDevice("17668941DF1FF34EBE59A32850E8280B")
+				.addTestDevice("890092AAB4B81704373A60C79FFE347F")
+                .build();
 		adView.loadAd(adRequest);
 	}
 
