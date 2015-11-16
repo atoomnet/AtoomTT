@@ -15,6 +15,9 @@
  */
 package net.atoom.android.tt2;
 
+import net.atoom.android.tt2.util.LogBridge;
+
+import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -136,12 +139,11 @@ public final class PageProcessor {
 			final byte[] bytes, final int byteIndex, final VideoTextState state) {
 
 		byte mosciacByte = bytes[byteIndex];
-
 		if (mosciacByte > 64 && mosciacByte < 96) {
 			state.htmlBuilder.append("<div class=\"t x" + state.divPosition
 					+ " y" + state.rowIndex + " h1 w1" + " b" + state.backColor
 					+ " t" + state.textColor + "\" data-m=\"" + mosciacByte
-					+ "\">" + byteToString(mosciacByte) + "</div>");
+					+ "\">" + byteToString(bytes, byteIndex) + "</div>");
 			state.divPosition++;
 			return;
 		}
@@ -194,8 +196,8 @@ public final class PageProcessor {
 	private void processTextByte(final PageEntity pageEntity,
 			final byte[] bytes, final int byteIndex, final VideoTextState state) {
 
-		final String text = byteToString(bytes[byteIndex]);
-		state.divBuilder.append(text);
+        final String text = byteToString(bytes, byteIndex);
+        state.divBuilder.append(text);
 
 		if ((bytes[byteIndex] < 0 || bytes[byteIndex] >= 32)
 				&& state.colIndex < 39)
@@ -347,18 +349,14 @@ public final class PageProcessor {
 		}
 	}
 
-	private String byteToString(final byte b) {
-		switch (b) {
-		case -4:
-			return "o";
-		case -10:
-			return "u";
-		case 127:
-			return " ";
-		default:
-			if (b < 32)
-				return " ";
-			return String.valueOf((char) b);
-		}
+	private String byteToString(final byte[] bytes, int byteIndex) {
+        if(bytes[byteIndex] > 32 || bytes[byteIndex] < 0){
+            try {
+                return new String(bytes, byteIndex, 1, "ISO-8859-1");
+            } catch (UnsupportedEncodingException e){
+                LogBridge.w("Unsupported encoding....");
+            }
+        }
+        return " ";
 	}
 }
